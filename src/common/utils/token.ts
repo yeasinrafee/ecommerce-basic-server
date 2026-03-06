@@ -8,6 +8,7 @@ export type AuthTokenPayload = {
   email: string;
   name: string;
   role: Role;
+  image?: string | null;
 };
 
 const signToken = (
@@ -21,6 +22,7 @@ const signToken = (
 };
 
 export const generateAuthTokens = (payload: AuthTokenPayload) => {
+  // include image if present
   const accessToken = signToken(payload, env.jwtAccessSecret, env.jwtAccessExpires);
   const refreshToken = signToken(payload, env.jwtRefreshSecret, env.jwtRefreshExpires);
 
@@ -41,6 +43,25 @@ export const verifyAccessToken = (token: string): AuthTokenPayload => {
     return decoded as AuthTokenPayload;
   } catch (error) {
     throw new AppError(401, 'Invalid access token', [
+      {
+        message: (error as Error).message,
+        code: 'INVALID_TOKEN'
+      }
+    ]);
+  }
+};
+
+export const verifyRefreshToken = (token: string): AuthTokenPayload => {
+  try {
+    const decoded = jwt.verify(token, env.jwtRefreshSecret);
+
+    if (!decoded || typeof decoded !== 'object' || Array.isArray(decoded)) {
+      throw new Error('Refresh token payload is invalid');
+    }
+
+    return decoded as AuthTokenPayload;
+  } catch (error) {
+    throw new AppError(401, 'Invalid refresh token', [
       {
         message: (error as Error).message,
         code: 'INVALID_TOKEN'

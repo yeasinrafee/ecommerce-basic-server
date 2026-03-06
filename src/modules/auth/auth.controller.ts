@@ -24,7 +24,27 @@ const createAdmin = async (req: Request, res: Response) => {
 	});
 };
 
+const refresh = async (req: Request, res: Response) => {
+	const { refreshToken } = req.body;
+	const result = await authService.refreshTokens(refreshToken);
+	
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'Token refreshed',
+		data: result,
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString(),
+			path: req.originalUrl
+		}
+	});
+};
+
+
 export const authController = {
-	createAdmin
+	createAdmin,
+	refresh
 };
 
