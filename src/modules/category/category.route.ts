@@ -4,7 +4,8 @@ import { categoryController } from './category.controller.js';
 
 const router = Router();
 
-router.get('/get-all', asyncHandler(categoryController.getCategories));
+router.get('/get-all-paginated', asyncHandler(categoryController.getCategories));
+router.get('/get-all', asyncHandler(categoryController.getAllCategories));
 router.get('/get/:id', asyncHandler(categoryController.getCategory));
 router.post('/create', asyncHandler(categoryController.createCategory));
 router.patch('/update/:id', asyncHandler(categoryController.updateCategory));

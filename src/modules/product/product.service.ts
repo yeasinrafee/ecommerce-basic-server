@@ -9,7 +9,7 @@ const getProducts = async ({ page, limit }: ProductListQuery) => {
       skip,
       take: limit,
       orderBy: {
-        createdAt: 'desc'
+        id: 'desc'
       }
     }),
     prisma.product.count()

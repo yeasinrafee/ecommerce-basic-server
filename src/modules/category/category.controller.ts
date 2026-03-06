@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { sendResponse } from '../../common/utils/send-response.js';
-import { asyncHandler } from '../../common/utils/async-handler.js';
 import { categoryService } from './category.service.js';
 
 const createCategory = async (req: Request, res: Response) => {
@@ -17,7 +16,7 @@ const createCategory = async (req: Request, res: Response) => {
 };
 
 const updateCategory = async (req: Request, res: Response) => {
-	const id = req.params.id;
+	const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	const payload = req.body;
 
 	const updated = await categoryService.updateCategory(id, payload);
@@ -51,7 +50,7 @@ const getCategories = async (req: Request, res: Response) => {
 };
 
 const getCategory = async (req: Request, res: Response) => {
-	const id = req.params.id;
+	const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	const cat = await categoryService.getCategoryById(id);
 
 	sendResponse({
@@ -63,8 +62,20 @@ const getCategory = async (req: Request, res: Response) => {
 	});
 };
 
+const getAllCategories = async (req: Request, res: Response) => {
+	const cats = await categoryService.getAllCategories();
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'All categories fetched',
+		data: cats
+	});
+};
+
 const deleteCategory = async (req: Request, res: Response) => {
-	const id = req.params.id;
+	const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 	await categoryService.deleteCategory(id);
 
 	sendResponse({
@@ -77,10 +88,11 @@ const deleteCategory = async (req: Request, res: Response) => {
 };
 
 export const categoryController = {
-	createCategory: asyncHandler(createCategory),
-	updateCategory: asyncHandler(updateCategory),
-	getCategories: asyncHandler(getCategories),
-	getCategory: asyncHandler(getCategory),
-	deleteCategory: asyncHandler(deleteCategory)
+	createCategory,
+	updateCategory,
+	getCategories,
+	getCategory,
+	getAllCategories,
+	deleteCategory
 };
 
