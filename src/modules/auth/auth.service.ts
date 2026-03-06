@@ -7,7 +7,11 @@ import {
 	verifyRefreshToken
 } from '../../common/utils/token.js';
 import { uploadMultipleFilesToCloudinary } from '../../common/utils/file-upload.js';
-import { CreateAdminInput, CreateAdminResult } from './auth.types.js';
+import {
+	CreateAdminInput,
+	CreateAdminResult,
+	LoginInput
+} from './auth.types.js';
 
 const createAdmin = async (
 	payload: CreateAdminInput,
@@ -65,7 +69,6 @@ const createAdmin = async (
 		});
 
 		return {
-			admin,
 			user: {
 				id: user.id,
 				email: user.email,
@@ -78,42 +81,106 @@ const createAdmin = async (
 	});
 };
 
-	const refreshTokens = async (refreshToken: string) => {
-		const payload = verifyRefreshToken(refreshToken);
-
-		const user = await prisma.user.findUnique({
-			where: {
-				id: payload.id
-			}
-		});
-
-		if (!user) {
-			throw new AppError(401, 'User not found', [
-				{
-					message: 'No user corresponds to the provided refresh token',
-					code: 'USER_NOT_FOUND'
-				}
-			]);
+const login = async (payload: LoginInput): Promise<CreateAdminResult> => {
+	const user = await prisma.user.findUnique({
+		where: {
+			email: payload.email
 		}
+	});
 
-		const admin = await prisma.admin.findUnique({
-			where: {
-				userId: user.id
+	if (!user) {
+		throw new AppError(404, 'User not found', [
+			{
+				field: 'email',
+				message: 'No user corresponds to the provided email',
+				code: 'USER_NOT_FOUND'
 			}
-		});
+		]);
+	}
 
-		const name = admin?.name ?? payload.name;
+	const isPasswordValid = await bcrypt.compare(payload.password, user.password);
 
-		return generateAuthTokens({
+	if (!isPasswordValid) {
+		throw new AppError(401, 'Invalid password', [
+			{
+				field: 'password',
+				message: 'The provided password is incorrect',
+				code: 'INVALID_PASSWORD'
+			}
+		]);
+	}
+
+	const admin = await prisma.admin.findUnique({
+		where: {
+			userId: user.id
+		}
+	});
+
+	if (!admin) {
+		throw new AppError(404, 'Admin profile not found', [
+			{
+				message: 'The user does not have an admin profile',
+				code: 'ADMIN_PROFILE_NOT_FOUND'
+			}
+		]);
+	}
+
+	const tokens = generateAuthTokens({
+		id: user.id,
+		email: user.email,
+		name: admin.name,
+		role: user.role
+	});
+
+	return {
+		user: {
 			id: user.id,
 			email: user.email,
-			name,
-			role: user.role
-		});
+			role: user.role,
+			name: admin.name,
+			image: admin.image
+		},
+		tokens
 	};
+};
+
+const refreshTokens = async (refreshToken: string) => {
+	const payload = verifyRefreshToken(refreshToken);
+
+	const user = await prisma.user.findUnique({
+		where: {
+			id: payload.id
+		}
+	});
+
+	if (!user) {
+		throw new AppError(401, 'User not found', [
+			{
+				message: 'No user corresponds to the provided refresh token',
+				code: 'USER_NOT_FOUND'
+			}
+		]);
+	}
+
+	const admin = await prisma.admin.findUnique({
+		where: {
+			userId: user.id
+		}
+	});
+
+	const name = admin?.name ?? payload.name;
+
+	return generateAuthTokens({
+		id: user.id,
+		email: user.email,
+		name,
+		role: user.role
+	});
+};
 
 export const authService = {
 	createAdmin,
+	login,
 	refreshTokens
 };
 

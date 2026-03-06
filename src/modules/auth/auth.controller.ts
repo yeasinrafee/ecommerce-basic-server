@@ -3,7 +3,7 @@ import { AppError } from '../../common/errors/app-error.js';
 import { sendResponse } from '../../common/utils/send-response.js';
 import { normalizeUploadedFiles } from '../../common/utils/file-upload.js';
 import { authService } from './auth.service.js';
-import { validateCreateAdminPayload } from './auth.types.js';
+import { validateCreateAdminPayload, validateLoginPayload } from './auth.types.js';
 
 const createAdmin = async (req: Request, res: Response) => {
 	const payload = validateCreateAdminPayload(req.body);
@@ -16,6 +16,25 @@ const createAdmin = async (req: Request, res: Response) => {
 		statusCode: 201,
 		success: true,
 		message: 'Admin created successfully',
+		data: result,
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString(),
+			path: req.originalUrl
+		}
+	});
+};
+
+const login = async (req: Request, res: Response) => {
+	const payload = validateLoginPayload(req.body);
+
+	const result = await authService.login(payload);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'Logged in successfully',
 		data: result,
 		errors: [],
 		meta: {
@@ -55,5 +74,6 @@ const refreshToken = async (req: Request, res: Response) => {
 
 export const authController = {
 	createAdmin,
+	login,
 	refreshToken
 };

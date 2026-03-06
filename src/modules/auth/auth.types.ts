@@ -2,6 +2,24 @@ import { z } from 'zod';
 import { Role } from '@prisma/client';
 import { AppError } from '../../common/errors/app-error.js';
 
+const parsePayload = <Schema extends z.ZodTypeAny>(schema: Schema, payload: unknown): z.infer<Schema> => {
+	const parsed = schema.safeParse(payload);
+
+	if (!parsed.success) {
+		throw new AppError(
+			400,
+			'Validation failed',
+			parsed.error.issues.map((issue) => ({
+				field: issue.path.join('.') || undefined,
+				message: issue.message,
+				code: 'VALIDATION_ERROR'
+			}))
+		);
+	}
+
+	return parsed.data;
+};
+
 export const createAdminSchema = z.object({
 	name: z
 		.string()
@@ -22,33 +40,28 @@ export const createAdminSchema = z.object({
 
 export type CreateAdminInput = z.infer<typeof createAdminSchema>;
 
-export const validateCreateAdminPayload = (payload: unknown): CreateAdminInput => {
-	const parsed = createAdminSchema.safeParse(payload);
+export const validateCreateAdminPayload = (payload: unknown): CreateAdminInput =>
+	parsePayload(createAdminSchema, payload);
 
-	if (!parsed.success) {
-		throw new AppError(
-			400,
-			'Validation failed',
-			parsed.error.issues.map((issue) => ({
-				field: issue.path.join('.') || undefined,
-				message: issue.message,
-				code: 'VALIDATION_ERROR'
-			}))
-		);
-	}
+export const loginSchema = z.object({
+	email: z
+		.string()
+		.trim()
+		.min(1, 'Email is required')
+		.email('A valid email address is required'),
+	password: z
+		.string()
+		.min(1, 'Password is required')
+		.min(8, 'Password must be at least 8 characters')
+		.max(100, 'Password cannot be longer than 100 characters')
+});
 
-	return parsed.data;
-};
+export type LoginInput = z.infer<typeof loginSchema>;
+
+export const validateLoginPayload = (payload: unknown): LoginInput =>
+	parsePayload(loginSchema, payload);
 
 export type CreateAdminResult = {
-	admin: {
-		id: string;
-		userId: string;
-		name: string;
-		image: string | null;
-		createdAt: Date;
-		updatedAt: Date;
-	};
 	user: {
 		id: string;
 		email: string;

@@ -22,6 +22,8 @@ router.post(
   asyncHandler(authController.createAdmin),
 );
 
+router.post("/login", asyncHandler(authController.login));
+
 router.post("/refresh", asyncHandler(authController.refreshToken));
 
 export const authRoutes = router;
