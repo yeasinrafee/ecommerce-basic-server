@@ -1,22 +1,25 @@
-import { Router } from 'express';
-import { asyncHandler } from '../../common/utils/async-handler.js';
-import { authController } from './auth.controller.js';
-import { createUploadMiddleware } from '../../common/utils/file-upload.js';
+import { Router } from "express";
+import { asyncHandler } from "../../common/utils/async-handler.js";
+import { authController } from "./auth.controller.js";
+import { createUploadMiddleware } from "../../common/utils/file-upload.js";
+import { Role } from "@prisma/client/edge";
+import {
+  authenticate,
+  authorizeRoles,
+} from "../../common/middlewares/auth.middleware.js";
 
 const router = Router();
 const upload = createUploadMiddleware({
-	maxFileSizeInMB: 10,
-	maxFileCount: 5
+  maxFileSizeInMB: 5,
+  maxFileCount: 1,
 });
 
 router.post(
-	'/admin/create',
-	upload.fields([
-		{ name: 'image', maxCount: 1 },
-		{ name: 'images', maxCount: 5 }
-	]),
-	asyncHandler(authController.createAdmin)
+  "/admin/create",
+  authenticate,
+  authorizeRoles(Role.SUPER_ADMIN),
+  upload.fields([{ name: "image", maxCount: 1 }]),
+  asyncHandler(authController.createAdmin),
 );
 
 export const authRoutes = router;
-
