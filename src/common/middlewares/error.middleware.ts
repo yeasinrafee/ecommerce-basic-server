@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { MulterError } from 'multer';
 import { AppError } from '../errors/app-error.js';
 import { logger } from '../../config/logger.js';
 import { sendResponse } from '../utils/send-response.js';
@@ -10,11 +11,23 @@ export const errorMiddleware = (
   _next: NextFunction
 ) => {
   const isAppError = error instanceof AppError;
+  const isMulterError = error instanceof MulterError;
 
-  const statusCode = isAppError ? error.statusCode : 500;
-  const message = isAppError ? error.message : 'Internal server error';
+  const statusCode = isAppError || isMulterError ? 400 : 500;
+  const message = isAppError
+    ? error.message
+    : isMulterError
+      ? 'File upload validation failed'
+      : 'Internal server error';
   const errors = isAppError
     ? error.errors
+    : isMulterError
+      ? [
+          {
+            message: error.message,
+            code: error.code
+          }
+        ]
     : [
         {
           message: 'Unexpected server error',
