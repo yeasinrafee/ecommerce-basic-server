@@ -1,0 +1,20 @@
+export type CreateCategoryDto = {
+	name: string;
+};
+
+export type UpdateCategoryDto = Partial<CreateCategoryDto>;
+
+export type CategoryListQuery = {
+	page?: number;
+	limit?: number;
+};
+
+export type ServiceListResult<T> = {
+	data: T[];
+	meta: {
+		page: number;
+		limit: number;
+		total: number;
+		totalPages: number;
+	};
+};

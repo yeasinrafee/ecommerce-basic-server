@@ -1,8 +1,24 @@
 model Product {
-  id          String   @id @default(cuid()) 
-  name        String 
-  description String? 
-  price       Decimal  @db.Decimal(10, 2) 
-  createdAt   DateTime @default(now()) 
-  updatedAt   DateTime @updatedAt 
+  id         String                 @id @default(cuid())
+  name       String
+  categories CategoriesOnProducts[]
+}
+
+model Category {
+  id        String                 @id @default(uuid())
+  name      String                 @unique
+  slug      String                 @unique
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+  products  CategoriesOnProducts[]
+}
+
+model CategoriesOnProducts {
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+  assignedAt DateTime @default(now())
+
+  @@id([productId, categoryId])
 }
