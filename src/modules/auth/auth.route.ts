@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../common/utils/async-handler.js";
 import { authController } from "./auth.controller.js";
 import { createUploadMiddleware } from "../../common/utils/file-upload.js";
-import { Role } from "@prisma/client";
+import { Role } from "@prisma/client/edge";
 import {
   authenticate,
   authorizeRoles,
@@ -19,12 +19,9 @@ router.post(
   authenticate,
   authorizeRoles(Role.SUPER_ADMIN),
   upload.fields([{ name: "image", maxCount: 1 }]),
-  asyncHandler(authController.createAdmin)
+  asyncHandler(authController.createAdmin),
 );
 
-router.post(
-  "/refresh",
-  asyncHandler(authController.refresh)
-);
+router.post("/refresh", asyncHandler(authController.refreshToken));
 
 export const authRoutes = router;
