@@ -19,8 +19,7 @@ const createAdmin = async (req: Request, res: Response) => {
 		data: result,
 		errors: [],
 		meta: {
-			timestamp: new Date().toISOString(),
-			path: req.originalUrl
+			timestamp: new Date().toISOString()
 		}
 	});
 };
@@ -38,8 +37,7 @@ const login = async (req: Request, res: Response) => {
 		data: result,
 		errors: [],
 		meta: {
-			timestamp: new Date().toISOString(),
-			path: req.originalUrl
+			timestamp: new Date().toISOString()
 		}
 	});
 };
@@ -66,8 +64,7 @@ const refreshToken = async (req: Request, res: Response) => {
 		data: tokens,
 		errors: [],
 		meta: {
-			timestamp: new Date().toISOString(),
-			path: req.originalUrl
+			timestamp: new Date().toISOString()
 		}
 	});
 };

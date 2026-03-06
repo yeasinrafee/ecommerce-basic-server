@@ -11,7 +11,6 @@ export type ApiMeta = {
   totalPages?: number;
   requestId?: string;
   timestamp?: string;
-  path?: string;
 };
 
 export type ApiResponse<T> = {

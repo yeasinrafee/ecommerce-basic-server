@@ -51,8 +51,7 @@ export const errorMiddleware = (
     message,
     errors,
     meta: {
-      timestamp: new Date().toISOString(),
-      path: req.originalUrl
+      timestamp: new Date().toISOString()
     }
   });
 };

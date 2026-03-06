@@ -34,12 +34,11 @@ app.get('/health', (req, res) => {
     },
     errors: [],
     meta: {
-      timestamp: new Date().toISOString(),
-      path: req.originalUrl
+      timestamp: new Date().toISOString()
     }
   });
 });
 
-app.use('/api/v1', apiRoutes);
+app.use('/api', apiRoutes);
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);

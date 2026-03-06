@@ -14,8 +14,7 @@ export const notFoundMiddleware = (req: Request, res: Response) => {
       }
     ],
     meta: {
-      timestamp: new Date().toISOString(),
-      path: req.originalUrl
+      timestamp: new Date().toISOString()
     }
   });
 };

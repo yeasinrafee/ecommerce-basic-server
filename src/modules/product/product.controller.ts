@@ -17,8 +17,7 @@ const getProducts = async (req: Request, res: Response) => {
     errors: [],
     meta: {
       ...result.meta,
-      timestamp: new Date().toISOString(),
-      path: req.originalUrl
+      timestamp: new Date().toISOString()
     }
   });
 };
