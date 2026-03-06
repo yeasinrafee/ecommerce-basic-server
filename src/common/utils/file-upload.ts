@@ -59,7 +59,6 @@ const uploadBuffer = async (
 	context: UploadContext,
 	index = 0
 ): Promise<UploadApiResponse> => {
-	// convert to webp if necessary
 	let buffer = file.buffer;
 	let uploadOptions: Record<string, unknown> = {};
 
@@ -153,7 +152,7 @@ export const uploadMultipleFilesToCloudinary = async (
 export const createUploadMiddleware = (options: MulterOptions = {}) => {
 	const {
 		maxFileSizeInMB = 5,
-		maxFileCount = 10,
+		maxFileCount = 11,
 		allowedMimeTypes = defaultAllowedMimeTypes
 	} = options;
 
