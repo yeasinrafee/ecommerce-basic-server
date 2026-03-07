@@ -7,9 +7,6 @@ export type UpdateTagDto = Partial<CreateTagDto>;
 export type TagListQuery = {
 	page?: number;
 	limit?: number;
-	/**
-	 * optional term to filter tags by name (case-insensitive, contains)
-	 */
 	searchTerm?: string;
 };
 

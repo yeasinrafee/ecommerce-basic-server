@@ -7,9 +7,6 @@ export type UpdateCategoryDto = Partial<CreateCategoryDto>;
 export type CategoryListQuery = {
 	page?: number;
 	limit?: number;
-	/**
-	 * optional term to filter categories by name (case-insensitive, contains)
-	 */
 	searchTerm?: string;
 };
 
