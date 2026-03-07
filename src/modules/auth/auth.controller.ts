@@ -77,7 +77,8 @@ const refreshToken = async (req: Request, res: Response) => {
 	});
 };
 
-const logout = (_req: Request, res: Response) => {
+const logout = async (_req: Request, res: Response) => {
+	// synchronous body; async ensures a Promise<void> return type for asyncHandler
 	clearAuthCookies(res);
 	sendResponse({
 		res,

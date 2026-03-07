@@ -4,9 +4,11 @@ import { toUpperUnderscore } from '../../common/utils/format.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { CreateTagDto, UpdateTagDto, ServiceListResult, TagListQuery } from './tag.types.js';
 
+import type { Prisma } from '@prisma/client';
+
 const getTags = async ({ page = 1, limit = 10, searchTerm }: TagListQuery = {}): Promise<ServiceListResult<any>> => {
 	const skip = (page - 1) * limit;
-	const where = searchTerm
+	const where: Prisma.TagWhereInput = searchTerm
 		? { name: { contains: searchTerm, mode: 'insensitive' } }
 		: {};
 

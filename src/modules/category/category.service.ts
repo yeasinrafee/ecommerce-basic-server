@@ -4,9 +4,11 @@ import { toUpperUnderscore } from '../../common/utils/format.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { CreateCategoryDto, UpdateCategoryDto, ServiceListResult, CategoryListQuery } from './category.types.js';
 
+import type { Prisma } from '@prisma/client';
+
 const getCategories = async ({ page = 1, limit = 10, searchTerm }: CategoryListQuery = {}): Promise<ServiceListResult<any>> => {
 	const skip = (page - 1) * limit;
-	const where = searchTerm
+	const where: Prisma.CategoryWhereInput = searchTerm
 		? { name: { contains: searchTerm, mode: 'insensitive' } }
 		: {};
 
