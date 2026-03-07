@@ -1,7 +1,7 @@
 model Attribute {
   id        String   @id @default(uuid())
-  name      String
-  slug      String                 @unique
+  name      String   @unique
+  slug      String   @unique
   values    String[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
