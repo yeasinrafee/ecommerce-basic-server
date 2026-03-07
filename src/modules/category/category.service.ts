@@ -1,6 +1,7 @@
 import { prisma } from '../../config/prisma.js';
 import toSlug from '../../common/utils/slug.js';
 import { toUpperUnderscore } from '../../common/utils/format.js';
+import { AppError } from '../../common/errors/app-error.js';
 import type { CreateCategoryDto, UpdateCategoryDto, ServiceListResult, CategoryListQuery } from './category.types.js';
 
 const getCategories = async ({ page = 1, limit = 10 }: CategoryListQuery = {}): Promise<ServiceListResult<any>> => {
@@ -34,12 +35,13 @@ const createCategory = async ({ name }: CreateCategoryDto) => {
 	const cleanNameKey = toUpperUnderscore(name);
 	const slug = toSlug(name);
 
-	const existingBySlug = await prisma.category.findUnique({ where: { slug } });
-	if (existingBySlug) throw new Error('Category slug already exists');
-
 	const existing = await prisma.category.findMany({ select: { id: true, name: true } });
 	const conflict = existing.find((c) => toUpperUnderscore(c.name) === cleanNameKey);
-	if (conflict) throw new Error('Category name already exists');
+	if (conflict) {
+		throw new AppError(400, 'Category name already exists', [
+			{ message: 'A category with that name exists', code: 'NAME_CONFLICT' }
+		]);
+	}
 
 	const created = await prisma.category.create({ data: { name, slug } });
 	return created;
@@ -47,20 +49,23 @@ const createCategory = async ({ name }: CreateCategoryDto) => {
 
 const updateCategory = async (id: string, payload: UpdateCategoryDto) => {
 	const existing = await prisma.category.findUnique({ where: { id } });
-	if (!existing) throw new Error('Category not found');
+	if (!existing) {
+		throw new AppError(404, 'Category not found', [
+			{ message: 'No category exists with the provided id', code: 'NOT_FOUND' }
+		]);
+	}
 
 	if (payload.name) {
 		const cleanNameKey = toUpperUnderscore(payload.name);
 		const slug = toSlug(payload.name);
 
-		
-		const bySlug = await prisma.category.findUnique({ where: { slug } });
-		if (bySlug && bySlug.id !== id) throw new Error('Category slug already exists');
-
-		
 		const others = await prisma.category.findMany({ where: { NOT: { id } }, select: { id: true, name: true } });
 		const conflict = others.find((c) => toUpperUnderscore(c.name) === cleanNameKey);
-		if (conflict) throw new Error('Category name already exists');
+		if (conflict) {
+			throw new AppError(400, 'Category name already exists', [
+				{ message: 'Another category uses this name', code: 'NAME_CONFLICT' }
+			]);
+		}
 
 		return prisma.category.update({ where: { id }, data: { name: payload.name, slug } });
 	}
