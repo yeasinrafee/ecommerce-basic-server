@@ -5,6 +5,7 @@ import { productCategoryRoutes } from '../modules/category/product-category.rout
 import { blogCategoryRoutes } from '../modules/category/blog-category.route.js';
 import { productTagRoutes } from '../modules/tag/product-tag.route.js';
 import { blogTagRoutes } from '../modules/tag/blog-tag.route.js';
+import { brandRoutes } from '../modules/brand/brand.route.js';
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use('/product-categories', productCategoryRoutes);
 router.use('/blog-categories', blogCategoryRoutes);
 router.use('/product-tags', productTagRoutes);
 router.use('/blog-tags', blogTagRoutes);
+router.use('/brands', brandRoutes);
 
 export const apiRoutes = router;
