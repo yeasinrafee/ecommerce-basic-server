@@ -20,7 +20,12 @@ const signToken = (
   });
 };
 
-export const generateAuthTokens = (payload: AuthTokenPayload) => {
+export type AuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+};
+
+export const generateAuthTokens = (payload: AuthTokenPayload): AuthTokens => {
   const accessToken = signToken(payload, env.jwtAccessSecret, env.jwtAccessExpires);
   const refreshToken = signToken(payload, env.jwtRefreshSecret, env.jwtRefreshExpires);
 

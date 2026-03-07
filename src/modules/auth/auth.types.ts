@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Role } from '@prisma/client';
 import { AppError } from '../../common/errors/app-error.js';
+import { AuthTokens } from '../../common/utils/token.js';
 
 const parsePayload = <Schema extends z.ZodTypeAny>(schema: Schema, payload: unknown): z.infer<Schema> => {
 	const parsed = schema.safeParse(payload);
@@ -69,9 +70,6 @@ export type CreateAdminResult = {
 		name: string;
 		image: string | null;
 	};
-	tokens: {
-		accessToken: string;
-		refreshToken: string;
-	};
+	tokens: AuthTokens;
 };
 
