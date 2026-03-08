@@ -2,16 +2,25 @@ import { prisma } from '../../config/prisma.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { UpdateAdminDto, ServiceListResult, AdminListQuery } from './admin.types.js';
 import type { Prisma } from '@prisma/client';
+import { Role } from '@prisma/client';
 
 const getAdmins = async ({ page = 1, limit = 10, searchTerm, status }: AdminListQuery = {}): Promise<ServiceListResult<any>> => {
     const skip = (page - 1) * limit;
 
-    const where: Prisma.AdminWhereInput = {};
+    // Always restrict to admins whose related user has role = ADMIN
+    const where: Prisma.AdminWhereInput = {
+        user: { role: Role.ADMIN }
+    };
 
     if (searchTerm) {
-        where.OR = [
-            { name: { contains: searchTerm, mode: 'insensitive' } },
-            { user: { email: { contains: searchTerm, mode: 'insensitive' } } }
+        // apply search on name or user's email while keeping role restriction
+        where.AND = [
+            {
+                OR: [
+                    { name: { contains: searchTerm, mode: 'insensitive' } },
+                    { user: { email: { contains: searchTerm, mode: 'insensitive' } } }
+                ]
+            }
         ];
     }
 
@@ -36,11 +45,12 @@ const getAdmins = async ({ page = 1, limit = 10, searchTerm, status }: AdminList
 };
 
 const getAdminById = async (id: string) => {
-    return prisma.admin.findUnique({ where: { id }, include: { user: true } });
+    // use findFirst so we can restrict by related user role
+    return prisma.admin.findFirst({ where: { id, user: { role: Role.ADMIN } }, include: { user: true } });
 };
 
 const updateAdmin = async (id: string, payload: UpdateAdminDto) => {
-    const existing = await prisma.admin.findUnique({ where: { id } });
+    const existing = await prisma.admin.findFirst({ where: { id, user: { role: Role.ADMIN } } });
     if (!existing) {
         throw new AppError(404, 'Admin not found', [{ message: 'No admin exists with the provided id', code: 'NOT_FOUND' }]);
     }
@@ -72,7 +82,7 @@ const updateAdmin = async (id: string, payload: UpdateAdminDto) => {
 
 const deleteAdmin = async (id: string) => {
     return prisma.$transaction(async (tx) => {
-        const existing = await tx.admin.findUnique({ where: { id } });
+        const existing = await tx.admin.findFirst({ where: { id, user: { role: Role.ADMIN } } });
         if (!existing) {
             throw new AppError(404, 'Admin not found', [{ message: 'No admin exists with the provided id', code: 'NOT_FOUND' }]);
         }
@@ -85,7 +95,7 @@ const deleteAdmin = async (id: string) => {
 };
 
 const getAllAdmins = async () => {
-    return prisma.admin.findMany({ include: { user: true }, orderBy: { createdAt: 'desc' } });
+    return prisma.admin.findMany({ where: { user: { role: Role.ADMIN } }, include: { user: true }, orderBy: { createdAt: 'desc' } });
 };
 
 const adminServiceObj = {
