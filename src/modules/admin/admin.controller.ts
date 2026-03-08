@@ -70,7 +70,6 @@ const updateAdmin = async (req: Request, res: Response) => {
         });
         return;
     } catch (err) {
-        // If we uploaded a new file but DB update failed, clean up the newly uploaded asset to avoid orphaned files
         if (newlyUploadedPublicId) {
             try {
                 await deleteCloudinaryAsset(newlyUploadedPublicId);
@@ -82,13 +81,6 @@ const updateAdmin = async (req: Request, res: Response) => {
         throw err;
     }
 
-    sendResponse({
-        res,
-        statusCode: 200,
-        success: true,
-        message: 'Admin updated',
-        data: updated
-    });
 };
 
 const deleteAdmin = async (req: Request, res: Response) => {
