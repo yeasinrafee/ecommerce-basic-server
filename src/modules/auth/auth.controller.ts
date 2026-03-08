@@ -12,14 +12,11 @@ const createAdmin = async (req: Request, res: Response) => {
 
 	const result = await authService.createAdmin(payload, files);
 
-	setAuthCookies(res, result.tokens);
-
 	sendResponse({
 		res,
 		statusCode: 201,
 		success: true,
 		message: 'Admin created successfully',
-		data: result,
 		errors: [],
 		meta: {
 			timestamp: new Date().toISOString()

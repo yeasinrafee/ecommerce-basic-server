@@ -10,7 +10,8 @@ import { uploadMultipleFilesToCloudinary } from '../../common/utils/file-upload.
 import {
 	CreateAdminInput,
 	CreateAdminResult,
-	LoginInput
+	LoginInput,
+	AuthResult
 } from './auth.types.js';
 
 const createAdmin = async (
@@ -61,13 +62,7 @@ const createAdmin = async (
 			}
 		});
 
-		const tokens = generateAuthTokens({
-			id: user.id,
-			email: user.email,
-			name: admin.name,
-			role: user.role
-		});
-
+		// For admin creation we do not issue tokens; return created user only
 		return {
 			user: {
 				id: user.id,
@@ -76,13 +71,12 @@ const createAdmin = async (
 				name: admin.name,
 				image: admin.image,
 				status: admin.status
-			},
-			tokens
+			}
 		};
 	});
 };
 
-const login = async (payload: LoginInput): Promise<CreateAdminResult> => {
+const login = async (payload: LoginInput): Promise<AuthResult> => {
 	const user = await prisma.user.findUnique({
 		where: {
 			email: payload.email

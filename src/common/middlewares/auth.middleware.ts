@@ -49,8 +49,6 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
     ]);
   }
 
-  console.log(user);
-
   req.user = {
     id: user.id,
     email: user.email,
@@ -71,8 +69,6 @@ export const authorizeRoles = (...allowedRoles: Role[]) => {
         }
       ]);
     }
-
-    console.log("req:",req.user);
 
     if (allowedRoles.length === 0 || allowedRoles.includes(req.user.role)) {
       next();
