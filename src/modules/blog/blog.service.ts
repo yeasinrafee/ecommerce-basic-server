@@ -42,6 +42,10 @@ const getBlogById = async (id: string) => {
 };
 
 const createBlog = async ({ title, image, authorName, shortDescription, content, categoryId, tagIds = [], userId }: CreateBlogDto) => {
+    if (!userId) {
+        throw new AppError(401, 'Unauthorized', [{ message: 'Missing user id', code: 'UNAUTHORIZED' }]);
+    }
+
     const created = await prisma.blog.create({
         data: {
             title,
@@ -50,8 +54,8 @@ const createBlog = async ({ title, image, authorName, shortDescription, content,
             shortDescription,
             content,
             category: { connect: { id: categoryId } },
-            user: userId ? { connect: { id: userId } } : undefined,
-            tags: tagIds && tagIds.length > 0 ? { create: tagIds.map((t) => ({ tag: { connect: { id: t } } })) } : undefined
+            user: { connect: { id: userId } },
+            tags: Array.isArray(tagIds) && tagIds.length > 0 ? { create: tagIds.map((t) => ({ tag: { connect: { id: t } } })) } : undefined
         },
         include: { category: true, tags: { include: { tag: true } }, user: true }
     });
