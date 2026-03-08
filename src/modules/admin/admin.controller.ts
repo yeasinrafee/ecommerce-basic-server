@@ -77,10 +77,26 @@ const getAllAdmins = async (req: Request, res: Response) => {
     });
 };
 
+const bulkUpdateStatus = async (req: Request, res: Response) => {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    const status = typeof req.body?.status === 'string' ? req.body.status : undefined;
+
+    const count = await adminService.bulkUpdateStatus(ids, status);
+
+    sendResponse({
+        res,
+        statusCode: 200,
+        success: true,
+        message: 'Statuses updated',
+        data: { updated: count }
+    });
+};
+
 export const adminController = {
     getAdmins,
     getAdmin,
     updateAdmin,
     deleteAdmin,
     getAllAdmins
+    ,bulkUpdateStatus
 };

@@ -139,7 +139,8 @@ const login = async (payload: LoginInput): Promise<CreateAdminResult> => {
 			email: user.email,
 			role: user.role,
 			name: admin.name,
-			image: admin.image
+			image: admin.image,
+			status: admin.status
 		},
 		tokens
 	};

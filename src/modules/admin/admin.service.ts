@@ -88,10 +88,23 @@ const getAllAdmins = async () => {
     return prisma.admin.findMany({ include: { user: true }, orderBy: { createdAt: 'desc' } });
 };
 
-export const adminService = {
+const adminServiceObj = {
     getAdmins,
     getAdminById,
     getAllAdmins,
     updateAdmin,
     deleteAdmin
 };
+
+
+const bulkUpdateStatus = async (ids: string[], status: string) => {
+    if (!Array.isArray(ids) || ids.length === 0) {
+        throw new AppError(400, 'No ids provided', [{ message: 'Provide an array of admin ids', code: 'INVALID_PAYLOAD' }]);
+    }
+
+    const result = await prisma.admin.updateMany({ where: { id: { in: ids } }, data: { status: status as any } });
+
+    return result.count;
+};
+
+export const adminService = Object.assign(adminServiceObj, { bulkUpdateStatus });

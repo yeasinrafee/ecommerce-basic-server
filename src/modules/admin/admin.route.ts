@@ -8,6 +8,7 @@ router.get('/get-all-paginated', asyncHandler(adminController.getAdmins));
 router.get('/get-all', asyncHandler(adminController.getAllAdmins));
 router.get('/get/:id', asyncHandler(adminController.getAdmin));
 router.patch('/update/:id', asyncHandler(adminController.updateAdmin));
+router.patch('/update-status', asyncHandler(adminController.bulkUpdateStatus));
 router.delete('/delete/:id', asyncHandler(adminController.deleteAdmin));
 
 export const adminRoutes = router;
