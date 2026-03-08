@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendResponse } from '../../common/utils/send-response.js';
 import { adminService } from './admin.service.js';
+import { normalizeUploadedFiles, uploadMultipleFilesToCloudinary, deleteCloudinaryAsset } from '../../common/utils/file-upload.js';
 
 const getAdmins = async (req: Request, res: Response) => {
     const page = Number(req.query.page ?? 1);
@@ -38,9 +39,48 @@ const getAdmin = async (req: Request, res: Response) => {
 
 const updateAdmin = async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const payload = req.body;
 
-    const updated = await adminService.updateAdmin(id, payload);
+
+    const payload = req.body || {};
+    let newlyUploadedPublicId: string | null = null;
+
+    try {
+        const files = normalizeUploadedFiles(req.files);
+        if (files.length > 0) {
+            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
+                projectFolder: 'admins',
+                entityId: id,
+                subFolder: id,
+                fileNamePrefix: 'admin'
+            });
+
+            const uploaded = uploadedFiles[0];
+            payload.image = uploaded?.secureUrl ?? null;
+            newlyUploadedPublicId = uploaded?.publicId ?? null;
+        }
+
+        const updated = await adminService.updateAdmin(id, payload, newlyUploadedPublicId);
+
+        sendResponse({
+            res,
+            statusCode: 200,
+            success: true,
+            message: 'Admin updated',
+            data: updated
+        });
+        return;
+    } catch (err) {
+        // If we uploaded a new file but DB update failed, clean up the newly uploaded asset to avoid orphaned files
+        if (newlyUploadedPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedPublicId);
+            } catch (deleteErr) {
+                console.warn('Failed to cleanup newly uploaded asset after update failure', { newlyUploadedPublicId, err: (deleteErr as Error).message });
+            }
+        }
+
+        throw err;
+    }
 
     sendResponse({
         res,

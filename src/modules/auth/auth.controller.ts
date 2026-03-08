@@ -17,6 +17,7 @@ const createAdmin = async (req: Request, res: Response) => {
 		statusCode: 201,
 		success: true,
 		message: 'Admin created successfully',
+		data: result.user,
 		errors: [],
 		meta: {
 			timestamp: new Date().toISOString()

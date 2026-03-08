@@ -49,9 +49,36 @@ const generatePublicId = (prefix: string, entityId: string) => {
 };
 
 const createFolderPath = ({ projectFolder, subFolder }: UploadContext) => {
-	return ['sp_images', projectFolder, subFolder]
+	return ['sp-files', projectFolder, subFolder]
 		.filter((part): part is string => Boolean(part && part.trim().length > 0))
 		.join('/');
+};
+
+const ensureFolderExists = async (folderPath: string) => {
+	if (!folderPath) return;
+
+	try {
+		// Cloudinary will auto-create folders on upload, but explicitly creating the
+		// folder first matches the requested behavior: create if missing, otherwise no-op.
+		// The API call will return an error if the folder already exists, which we safely ignore.
+		await new Promise((resolve, reject) => {
+			// @ts-ignore - cloudinary typings may not include create_folder on api
+			cloudinary.api.create_folder(folderPath, (err: unknown, res: unknown) => {
+				if (err) return reject(err);
+				resolve(res);
+			});
+		});
+	} catch (err: any) {
+		const msg = err?.message ?? String(err);
+		// If folder already exists, Cloudinary may return an error we can ignore.
+		if (msg && /already exists/i.test(msg)) {
+			return;
+		}
+
+		throw new AppError(500, 'Failed to ensure upload folder exists', [
+			{ message: msg, code: 'FOLDER_CREATE_FAILED' }
+		]);
+	}
 };
 
 const uploadBuffer = async (
@@ -84,6 +111,14 @@ const uploadBuffer = async (
 
 	const fileNamePrefix = context.fileNamePrefix ?? 'asset';
 	const publicId = generatePublicId(`${fileNamePrefix}_${index + 1}`, context.entityId);
+
+	// Ensure folder exists before uploading (no-op if already present)
+	try {
+		await ensureFolderExists(createFolderPath(context));
+	} catch (err) {
+		// bubble folder creation errors as upload errors
+		throw err;
+	}
 
 	return new Promise((resolve, reject) => {
 		const upload = cloudinary.uploader.upload_stream(
@@ -147,6 +182,55 @@ export const uploadMultipleFilesToCloudinary = async (
 		format: uploaded.format,
 		resourceType: uploaded.resource_type
 	}));
+};
+
+export const deleteCloudinaryAsset = async (publicId: string) => {
+	if (!publicId) return null;
+
+	try {
+		const result = await new Promise((resolve, reject) => {
+			cloudinary.uploader.destroy(publicId, { resource_type: 'image' }, (err, res) => {
+				if (err) return reject(err);
+				resolve(res);
+			});
+		});
+
+		return result;
+	} catch (err) {
+		throw new AppError(500, 'Failed to delete asset from cloud', [
+			{ message: (err as Error).message, code: 'CLOUD_DELETE_FAILED' }
+		]);
+	}
+};
+
+export const getPublicIdFromUrl = (url?: string | null): string | null => {
+	if (!url) return null;
+
+	try {
+		// Strip query string
+		const withoutQuery = url.split('?')[0];
+		const marker = '/upload/';
+		const idx = withoutQuery.indexOf(marker);
+		if (idx === -1) return null;
+
+		let rest = withoutQuery.substring(idx + marker.length);
+
+		// Remove any leading version segment e.g. v123456789/
+		const vMatch = rest.match(/v\d+\//);
+		if (vMatch && vMatch.index !== undefined) {
+			rest = rest.substring(vMatch.index + vMatch[0].length);
+		}
+
+		// Remove file extension
+		const lastDot = rest.lastIndexOf('.');
+		if (lastDot !== -1) {
+			rest = rest.substring(0, lastDot);
+		}
+
+		return rest || null;
+	} catch (err) {
+		return null;
+	}
 };
 
 export const createUploadMiddleware = (options: MulterOptions = {}) => {
