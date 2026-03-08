@@ -118,21 +118,23 @@ const deleteAdmin = async (id: string) => {
     if (!existing) {
         throw new AppError(404, 'Admin not found', [{ message: 'No admin exists with the provided id', code: 'NOT_FOUND' }]);
     }
-
     const previousPublicId = getPublicIdFromUrl(existing.image) ?? null;
-
-    await prisma.$transaction(async (tx) => {
-        await tx.admin.delete({ where: { id } });
-        await tx.user.delete({ where: { id: existing.userId } });
-    });
 
     if (previousPublicId) {
         try {
             await deleteCloudinaryAsset(previousPublicId);
         } catch (err) {
-            console.warn('Failed to delete cloud asset after admin removal', { previousPublicId, err: (err as Error).message });
+            console.warn('Failed to delete cloud asset before admin removal', { previousPublicId, err: (err as Error).message });
+            throw new AppError(500, 'Failed to delete associated image from cloud', [
+                { message: (err as Error).message, code: 'CLOUD_DELETE_FAILED' }
+            ]);
         }
     }
+
+    await prisma.$transaction(async (tx) => {
+        await tx.admin.delete({ where: { id } });
+        await tx.user.delete({ where: { id: existing.userId } });
+    });
 
     return true;
 };
