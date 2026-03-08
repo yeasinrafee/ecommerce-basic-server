@@ -5,11 +5,11 @@ model Product {
 }
 
 model CategoriesOnProducts {
-  product    Product  @relation(fields: [productId], references: [id])
+  product    Product         @relation(fields: [productId], references: [id])
   productId  String
   category   ProductCategory @relation(fields: [categoryId], references: [id])
   categoryId String
-  assignedAt DateTime @default(now())
+  assignedAt DateTime        @default(now())
 
   @@id([productId, categoryId])
 }
@@ -18,8 +18,7 @@ model Brand {
   id        String   @id @default(uuid())
   name      String   @unique
   slug      String   @unique
+  image     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
-

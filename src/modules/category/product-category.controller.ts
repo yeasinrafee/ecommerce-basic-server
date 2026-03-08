@@ -1,33 +1,96 @@
 import { Request, Response } from 'express';
 import { sendResponse } from '../../common/utils/send-response.js';
 import { productCategoryService } from './product-category.service.js';
+import { normalizeUploadedFiles, uploadMultipleFilesToCloudinary, deleteCloudinaryAsset } from '../../common/utils/file-upload.js';
+import crypto from 'node:crypto';
 
 const createCategory = async (req: Request, res: Response) => {
     const { name } = req.body;
-    const created = await productCategoryService.createCategory({ name });
 
-    sendResponse({
-        res,
-        statusCode: 201,
-        success: true,
-        message: 'Category created',
-        data: created
-    });
+    let newlyUploadedPublicId: string | null = null;
+    let imageUrl: string | null | undefined = undefined;
+
+    try {
+        const files = normalizeUploadedFiles(req.files);
+        if (files.length > 0) {
+            const generatedId = crypto.randomUUID();
+            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
+                projectFolder: 'categories',
+                entityId: generatedId,
+                subFolder: generatedId,
+                fileNamePrefix: 'category'
+            });
+
+            const uploaded = uploadedFiles[0];
+            imageUrl = uploaded?.secureUrl ?? null;
+            newlyUploadedPublicId = uploaded?.publicId ?? null;
+        }
+
+        const created = await productCategoryService.createCategory({ name, image: imageUrl ?? null });
+
+        sendResponse({
+            res,
+            statusCode: 201,
+            success: true,
+            message: 'Category created',
+            data: created
+        });
+        return;
+    } catch (err) {
+        if (newlyUploadedPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedPublicId);
+            } catch (cleanupErr) {
+                console.warn('Failed to cleanup uploaded category image after create failure', { newlyUploadedPublicId, err: (cleanupErr as Error).message });
+            }
+        }
+
+        throw err;
+    }
 };
 
 const updateCategory = async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const payload = req.body;
+    const payload = req.body || {};
+    let newlyUploadedPublicId: string | null = null;
 
-    const updated = await productCategoryService.updateCategory(id, payload);
+    try {
+        const files = normalizeUploadedFiles(req.files);
 
-    sendResponse({
-        res,
-        statusCode: 200,
-        success: true,
-        message: 'Category updated',
-        data: updated
-    });
+        if (files.length > 0) {
+            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
+                projectFolder: 'categories',
+                entityId: id,
+                subFolder: id,
+                fileNamePrefix: 'category'
+            });
+
+            const uploaded = uploadedFiles[0];
+            payload.image = uploaded?.secureUrl ?? null;
+            newlyUploadedPublicId = uploaded?.publicId ?? null;
+        }
+
+        const updated = await productCategoryService.updateCategory(id, payload, newlyUploadedPublicId);
+
+        sendResponse({
+            res,
+            statusCode: 200,
+            success: true,
+            message: 'Category updated',
+            data: updated
+        });
+        return;
+    } catch (err) {
+        if (newlyUploadedPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedPublicId);
+            } catch (deleteErr) {
+                console.warn('Failed to cleanup newly uploaded category asset after update failure', { newlyUploadedPublicId, err: (deleteErr as Error).message });
+            }
+        }
+
+        throw err;
+    }
 };
 
 const getCategories = async (req: Request, res: Response) => {

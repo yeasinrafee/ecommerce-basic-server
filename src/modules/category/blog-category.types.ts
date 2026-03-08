@@ -1,5 +1,6 @@
 export type CreateCategoryDto = {
     name: string;
+    image?: string | null;
 };
 
 export type UpdateCategoryDto = Partial<CreateCategoryDto>;
