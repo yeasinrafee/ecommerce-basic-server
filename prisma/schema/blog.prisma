@@ -1,0 +1,23 @@
+model Blog {
+	id           String       @id @default(uuid())
+	title        String
+	image        String?
+	authorName   String
+	shortDescription String
+	content      String
+	category     BlogCategory @relation(fields: [categoryId], references: [id])
+	categoryId   String
+	tags         BlogsOnTags[]
+	createdAt    DateTime     @default(now())
+	updatedAt    DateTime     @updatedAt
+}
+
+model BlogsOnTags {
+	blog      Blog    @relation(fields: [blogId], references: [id])
+	blogId    String
+	tag       BlogTag @relation(fields: [tagId], references: [id])
+	tagId     String
+	assignedAt DateTime @default(now())
+
+	@@id([blogId, tagId])
+}
