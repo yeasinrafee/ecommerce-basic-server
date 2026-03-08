@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../../common/utils/async-handler.js";
 import { authController } from "./auth.controller.js";
 import { createUploadMiddleware } from "../../common/utils/file-upload.js";
-import { Role } from "@prisma/client/edge";
+import { Role } from "@prisma/client";
 import {
   authenticate,
   authorizeRoles,
