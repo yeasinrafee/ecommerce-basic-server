@@ -1,14 +1,17 @@
-export type CreateCategoryDto = {
-    name: string;
+export type Status = 'ACTIVE' | 'INACTIVE';
+
+export type UpdateAdminDto = {
+    name?: string;
+    email?: string;
+    status?: Status;
     image?: string | null;
 };
 
-export type UpdateCategoryDto = Partial<CreateCategoryDto>;
-
-export type CategoryListQuery = {
+export type AdminListQuery = {
     page?: number;
     limit?: number;
     searchTerm?: string;
+    status?: Status;
 };
 
 export type ServiceListResult<T> = {

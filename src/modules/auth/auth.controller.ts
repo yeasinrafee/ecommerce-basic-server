@@ -12,15 +12,12 @@ const createAdmin = async (req: Request, res: Response) => {
 
 	const result = await authService.createAdmin(payload, files);
 
-	// also set http-only cookies so browsers can store the tokens automatically
-	setAuthCookies(res, result.tokens);
-
 	sendResponse({
 		res,
 		statusCode: 201,
 		success: true,
 		message: 'Admin created successfully',
-		data: result,
+		data: result.user,
 		errors: [],
 		meta: {
 			timestamp: new Date().toISOString()
@@ -78,7 +75,6 @@ const refreshToken = async (req: Request, res: Response) => {
 };
 
 const logout = async (_req: Request, res: Response) => {
-	// synchronous body; async ensures a Promise<void> return type for asyncHandler
 	clearAuthCookies(res);
 	sendResponse({
 		res,

@@ -1,11 +1,11 @@
-export type CreateCategoryDto = {
+export type CreateAttributeDto = {
     name: string;
-    image?: string | null;
+    values?: string[];
 };
 
-export type UpdateCategoryDto = Partial<CreateCategoryDto>;
+export type UpdateAttributeDto = Partial<CreateAttributeDto>;
 
-export type CategoryListQuery = {
+export type AttributeListQuery = {
     page?: number;
     limit?: number;
     searchTerm?: string;

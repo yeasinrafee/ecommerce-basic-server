@@ -62,14 +62,21 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const validateLoginPayload = (payload: unknown): LoginInput =>
 	parsePayload(loginSchema, payload);
 
+export type AdminUserShape = {
+	id: string;
+	email: string;
+	role: Role;
+	name: string;
+	image: string | null;
+	status: 'ACTIVE' | 'INACTIVE';
+};
+
 export type CreateAdminResult = {
-	user: {
-		id: string;
-		email: string;
-		role: Role;
-		name: string;
-		image: string | null;
-	};
+	user: AdminUserShape;
+};
+
+export type AuthResult = {
+	user: AdminUserShape;
 	tokens: AuthTokens;
 };
 

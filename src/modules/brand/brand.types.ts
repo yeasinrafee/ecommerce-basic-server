@@ -1,5 +1,6 @@
 export type CreateBrandDto = {
 	name: string;
+	image?: string | null;
 };
 
 export type UpdateBrandDto = Partial<CreateBrandDto>;
