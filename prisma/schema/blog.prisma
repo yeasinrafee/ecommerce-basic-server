@@ -1,6 +1,8 @@
 model Blog {
 	id           String       @id @default(uuid())
 	title        String
+	userId       String
+	user         User         @relation(fields: [userId], references: [id])
 	image        String?
 	authorName   String
 	shortDescription String

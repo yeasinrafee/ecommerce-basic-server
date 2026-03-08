@@ -18,6 +18,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   admins Admin[]
+  blogs  Blog[]
 }
 
 model Admin {
