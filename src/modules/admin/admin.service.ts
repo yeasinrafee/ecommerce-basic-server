@@ -1,0 +1,97 @@
+import { prisma } from '../../config/prisma.js';
+import { AppError } from '../../common/errors/app-error.js';
+import type { UpdateAdminDto, ServiceListResult, AdminListQuery } from './admin.types.js';
+import type { Prisma } from '@prisma/client';
+
+const getAdmins = async ({ page = 1, limit = 10, searchTerm, status }: AdminListQuery = {}): Promise<ServiceListResult<any>> => {
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.AdminWhereInput = {};
+
+    if (searchTerm) {
+        where.OR = [
+            { name: { contains: searchTerm, mode: 'insensitive' } },
+            { user: { email: { contains: searchTerm, mode: 'insensitive' } } }
+        ];
+    }
+
+    if (status) {
+        Object.assign(where, { status });
+    }
+
+    const [data, total] = await Promise.all([
+        prisma.admin.findMany({ where, skip, take: limit, include: { user: true }, orderBy: { createdAt: 'desc' } }),
+        prisma.admin.count({ where })
+    ]);
+
+    return {
+        data,
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages: Math.max(1, Math.ceil(total / limit))
+        }
+    };
+};
+
+const getAdminById = async (id: string) => {
+    return prisma.admin.findUnique({ where: { id }, include: { user: true } });
+};
+
+const updateAdmin = async (id: string, payload: UpdateAdminDto) => {
+    const existing = await prisma.admin.findUnique({ where: { id } });
+    if (!existing) {
+        throw new AppError(404, 'Admin not found', [{ message: 'No admin exists with the provided id', code: 'NOT_FOUND' }]);
+    }
+
+    return prisma.$transaction(async (tx) => {
+        if (payload.email) {
+            const other = await tx.user.findUnique({ where: { email: payload.email } });
+            if (other && other.id !== existing.userId) {
+                throw new AppError(409, 'Email already registered', [{ field: 'email', message: 'Another user uses this email', code: 'EMAIL_ALREADY_EXISTS' }]);
+            }
+
+            await tx.user.update({ where: { id: existing.userId }, data: { email: payload.email } });
+        }
+
+        const adminData: any = {};
+        if (typeof payload.name === 'string') adminData.name = payload.name;
+        if (payload.status !== undefined) adminData.status = payload.status as any;
+        if (payload.image !== undefined) adminData.image = payload.image;
+
+        const updatedAdmin = await tx.admin.update({ where: { id }, data: adminData });
+        const user = await tx.user.findUnique({ where: { id: existing.userId } });
+
+        return {
+            ...updatedAdmin,
+            user
+        };
+    });
+};
+
+const deleteAdmin = async (id: string) => {
+    return prisma.$transaction(async (tx) => {
+        const existing = await tx.admin.findUnique({ where: { id } });
+        if (!existing) {
+            throw new AppError(404, 'Admin not found', [{ message: 'No admin exists with the provided id', code: 'NOT_FOUND' }]);
+        }
+
+        await tx.admin.delete({ where: { id } });
+        await tx.user.delete({ where: { id: existing.userId } });
+
+        return true;
+    });
+};
+
+const getAllAdmins = async () => {
+    return prisma.admin.findMany({ include: { user: true }, orderBy: { createdAt: 'desc' } });
+};
+
+export const adminService = {
+    getAdmins,
+    getAdminById,
+    getAllAdmins,
+    updateAdmin,
+    deleteAdmin
+};

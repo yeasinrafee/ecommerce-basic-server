@@ -69,6 +69,7 @@ export type CreateAdminResult = {
 		role: Role;
 		name: string;
 		image: string | null;
+		status: 'ACTIVE' | 'INACTIVE';
 	};
 	tokens: AuthTokens;
 };

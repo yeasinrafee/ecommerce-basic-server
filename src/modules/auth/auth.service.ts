@@ -74,7 +74,8 @@ const createAdmin = async (
 				email: user.email,
 				role: user.role,
 				name: admin.name,
-				image: admin.image
+				image: admin.image,
+				status: admin.status
 			},
 			tokens
 		};
