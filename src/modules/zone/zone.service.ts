@@ -28,6 +28,22 @@ const getAllZones = async () => {
   return prisma.zone.findMany({ orderBy: { createdAt: 'desc' } });
 };
 
+const getAvailableZones = async () => {
+  // return zones which are NOT assigned to any ACTIVE zone policy
+  return prisma.zone.findMany({
+    where: {
+      zonePolicies: {
+        none: {
+          zonePolicy: {
+            status: 'ACTIVE'
+          }
+        }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+};
+
 const getZoneById = async (id: string) => {
   const z = await prisma.zone.findUnique({ where: { id } });
   if (!z) {
@@ -86,6 +102,7 @@ const deleteZone = async (id: string) => {
 export const zoneService = {
   getZones,
   getAllZones,
+  getAvailableZones,
   getZoneById,
   findByName,
   createZone,

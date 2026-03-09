@@ -56,6 +56,13 @@ const getAllZones = async (req: Request, res: Response) => {
   sendResponse({ res, statusCode: 200, success: true, message: 'All zones fetched', data });
 };
 
+const getAvailableZones = async (req: Request, res: Response) => {
+  const zs = await zoneService.getAvailableZones();
+  const data = zs.map((z: any) => ({ ...z, name: fromUpperUnderscore(z.name) }));
+
+  sendResponse({ res, statusCode: 200, success: true, message: 'Available zones fetched', data });
+};
+
 const getZone = async (req: Request, res: Response) => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const z = await zoneService.getZoneById(id);
@@ -76,6 +83,7 @@ export const zoneController = {
   updateZone,
   getZones,
   getAllZones,
+  getAvailableZones,
   getZone,
   deleteZone
 };
