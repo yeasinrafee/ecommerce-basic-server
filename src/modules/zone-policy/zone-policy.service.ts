@@ -85,11 +85,21 @@ const deleteZonePolicy = async (id: string) => {
   return true;
 };
 
+const bulkUpdateStatus = async (ids: string[], status: string) => {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new AppError(400, 'No ids provided', [{ message: 'Provide an array of zone policy ids', code: 'INVALID_PAYLOAD' }]);
+  }
+
+  const result = await prisma.zonePolicy.updateMany({ where: { id: { in: ids } }, data: { status: status as any } });
+  return result.count;
+};
+
 export const zonePolicyService = {
   getZonePolicies,
   getAllZonePolicies,
   getZonePolicyById,
   createZonePolicy,
   updateZonePolicy,
-  deleteZonePolicy
+  deleteZonePolicy,
+  bulkUpdateStatus
 };

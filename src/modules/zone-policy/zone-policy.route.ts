@@ -8,6 +8,7 @@ router.get('/get-all-paginated', asyncHandler(zonePolicyController.getZonePolici
 router.get('/get-all', asyncHandler(zonePolicyController.getAllZonePolicies));
 router.get('/get/:id', asyncHandler(zonePolicyController.getZonePolicyById));
 router.post('/create', asyncHandler(zonePolicyController.createZonePolicy));
+router.patch('/bulk-update-status', asyncHandler(zonePolicyController.bulkUpdateStatus));
 router.patch('/update/:id', asyncHandler(zonePolicyController.updateZonePolicy));
 router.delete('/delete/:id', asyncHandler(zonePolicyController.deleteZonePolicy));
 

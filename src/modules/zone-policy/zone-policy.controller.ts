@@ -75,11 +75,26 @@ const deleteZonePolicy = async (req: Request, res: Response) => {
   sendResponse({ res, statusCode: 200, success: true, message: 'ZonePolicy deleted', data: null });
 };
 
+const bulkUpdateStatus = async (req: Request, res: Response) => {
+  const body = req.body || {};
+  const ids = Array.isArray(body.ids) ? body.ids.map(String) : [];
+  const status = typeof body.status === 'string' ? body.status : undefined;
+
+  if (!status) {
+    throw new AppError(400, 'Missing required field', [{ message: 'status is required', code: 'MISSING_FIELDS' }]);
+  }
+
+  const updated = await zonePolicyService.bulkUpdateStatus(ids, status);
+
+  sendResponse({ res, statusCode: 200, success: true, message: 'Zone policies updated', data: { updated } });
+};
+
 export const zonePolicyController = {
   createZonePolicy,
   updateZonePolicy,
   getZonePolicies,
   getAllZonePolicies,
   getZonePolicyById,
+  bulkUpdateStatus,
   deleteZonePolicy
 };
