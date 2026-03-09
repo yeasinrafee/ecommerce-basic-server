@@ -47,6 +47,11 @@ const createZone = async (dto: CreateZoneDto) => {
   return created;
 };
 
+const findByName = async (name: string) => {
+  const formatted = toUpperUnderscore(name);
+  return prisma.zone.findUnique({ where: { name: formatted } });
+};
+
 const updateZone = async (id: string, payload: UpdateZoneDto) => {
   const existing = await prisma.zone.findUnique({ where: { id } });
   if (!existing) {
@@ -82,6 +87,7 @@ export const zoneService = {
   getZones,
   getAllZones,
   getZoneById,
+  findByName,
   createZone,
   updateZone,
   deleteZone

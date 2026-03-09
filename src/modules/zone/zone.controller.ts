@@ -11,6 +11,11 @@ const createZone = async (req: Request, res: Response) => {
     throw new AppError(400, 'Missing required field', [{ message: 'name is required', code: 'MISSING_FIELDS' }]);
   }
 
+  const existing = await zoneService.findByName(name);
+  if (existing) {
+    throw new AppError(400, 'Zone name already exists', [{ message: 'A zone with that name exists', code: 'NAME_CONFLICT' }]);
+  }
+
   const created = await zoneService.createZone({ name } as CreateZoneDto);
   const result = { ...created, name: fromUpperUnderscore(created.name) };
 
@@ -20,6 +25,13 @@ const createZone = async (req: Request, res: Response) => {
 const updateZone = async (req: Request, res: Response) => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const payload = req.body || {};
+  if (payload.name) {
+    const conflict = await zoneService.findByName(payload.name);
+    if (conflict && conflict.id !== id) {
+      throw new AppError(400, 'Zone name already exists', [{ message: 'Another zone uses this name', code: 'NAME_CONFLICT' }]);
+    }
+  }
+
   const updated = await zoneService.updateZone(id, payload);
   const result = { ...updated, name: fromUpperUnderscore(updated.name) };
 
