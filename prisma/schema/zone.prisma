@@ -1,0 +1,35 @@
+enum PolicyStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Zone {
+	id        String   @id @default(uuid())
+	name      String   @unique
+	createdAt DateTime @default(now())
+	updatedAt DateTime @updatedAt
+
+	zonePolicies ZonePoliciesOnZones[]
+}
+
+model ZonePolicy {
+	id           String   @id @default(uuid())
+	policyName   String
+	deliveryTime Float
+	shippingCost Float
+	status       PolicyStatus @default(ACTIVE)
+	createdAt    DateTime     @default(now())
+	updatedAt    DateTime     @updatedAt
+
+	zones ZonePoliciesOnZones[]
+}
+
+model ZonePoliciesOnZones {
+	zonePolicy   ZonePolicy @relation(fields: [zonePolicyId], references: [id])
+	zonePolicyId String
+	zone         Zone       @relation(fields: [zoneId], references: [id])
+	zoneId       String
+	assignedAt   DateTime   @default(now())
+
+	@@id([zonePolicyId, zoneId])
+}
