@@ -13,10 +13,10 @@ const uploadImage = async (req: Request, res: Response) => {
         }
 
         const generatedId = crypto.randomUUID();
+        // upload into the common `blogs` folder (no per-upload subfolder)
         const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
             projectFolder: 'blogs',
             entityId: generatedId,
-            subFolder: generatedId,
             fileNamePrefix: 'blog'
         });
 

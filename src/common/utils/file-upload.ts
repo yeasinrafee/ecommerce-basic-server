@@ -58,11 +58,8 @@ const ensureFolderExists = async (folderPath: string) => {
 	if (!folderPath) return;
 
 	try {
-		// Cloudinary will auto-create folders on upload, but explicitly creating the
-		// folder first matches the requested behavior: create if missing, otherwise no-op.
-		// The API call will return an error if the folder already exists, which we safely ignore.
 		await new Promise((resolve, reject) => {
-			// @ts-ignore - cloudinary typings may not include create_folder on api
+			
 			cloudinary.api.create_folder(folderPath, (err: unknown, res: unknown) => {
 				if (err) return reject(err);
 				resolve(res);
@@ -70,7 +67,7 @@ const ensureFolderExists = async (folderPath: string) => {
 		});
 	} catch (err: any) {
 		const msg = err?.message ?? String(err);
-		// If folder already exists, Cloudinary may return an error we can ignore.
+	
 		if (msg && /already exists/i.test(msg)) {
 			return;
 		}
@@ -112,11 +109,11 @@ const uploadBuffer = async (
 	const fileNamePrefix = context.fileNamePrefix ?? 'asset';
 	const publicId = generatePublicId(`${fileNamePrefix}_${index + 1}`, context.entityId);
 
-	// Ensure folder exists before uploading (no-op if already present)
+	
 	try {
 		await ensureFolderExists(createFolderPath(context));
 	} catch (err) {
-		// bubble folder creation errors as upload errors
+	
 		throw err;
 	}
 
