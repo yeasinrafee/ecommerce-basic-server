@@ -7,15 +7,19 @@ import type { CreateZonePolicyDto } from './zone-policy.types.js';
 const createZonePolicy = async (req: Request, res: Response) => {
   const body = req.body || {};
   const { policyName, deliveryTime, shippingCost, status } = body;
+
   if (!policyName || deliveryTime === undefined || shippingCost === undefined) {
     throw new AppError(400, 'Missing required fields', [{ message: 'policyName, deliveryTime and shippingCost are required', code: 'MISSING_FIELDS' }]);
   }
+
+  const zoneIds = Array.isArray(body.zoneIds) ? body.zoneIds.map(String) : undefined;
 
   const dto: CreateZonePolicyDto = {
     policyName: String(policyName),
     deliveryTime: Number(deliveryTime),
     shippingCost: Number(shippingCost),
-    status: status === undefined ? undefined : String(status) as any
+    status: status === undefined ? undefined : String(status) as any,
+    zoneIds
   };
 
   const created = await zonePolicyService.createZonePolicy(dto);
@@ -33,6 +37,11 @@ const updateZonePolicy = async (req: Request, res: Response) => {
       castPayload[f] = castPayload[f] === null ? null : Number(castPayload[f]);
     }
   });
+
+  // ensure zoneIds is an array of strings if provided
+  if ('zoneIds' in payload) {
+    castPayload.zoneIds = Array.isArray(payload.zoneIds) ? payload.zoneIds.map(String) : [];
+  }
 
   const updated = await zonePolicyService.updateZonePolicy(id, castPayload);
 

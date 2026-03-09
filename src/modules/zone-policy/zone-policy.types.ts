@@ -3,6 +3,7 @@ export type CreateZonePolicyDto = {
   deliveryTime: number;
   shippingCost: number;
   status?: 'ACTIVE' | 'INACTIVE';
+  zoneIds?: string[];
 };
 
 export type UpdateZonePolicyDto = Partial<CreateZonePolicyDto>;
