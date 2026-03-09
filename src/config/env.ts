@@ -27,6 +27,7 @@ export const env = {
   cloudinaryCloudName: required(process.env.CLOUDINARY_CLOUD_NAME, 'CLOUDINARY_CLOUD_NAME'),
   cloudinaryApiKey: required(process.env.CLOUDINARY_API_KEY, 'CLOUDINARY_API_KEY'),
   cloudinaryApiSecret: required(process.env.CLOUDINARY_API_SECRET, 'CLOUDINARY_API_SECRET'),
+  uploadsParentFolder: required(process.env.UPLOADS_PARENT_FOLDER, 'UPLOADS_PARENT_FOLDER'),
   jwtAccessSecret: required(process.env.JWT_ACCESS_SECRET, 'JWT_ACCESS_SECRET'),
   jwtRefreshSecret: required(process.env.JWT_REFRESH_SECRET, 'JWT_REFRESH_SECRET'),
   jwtAccessExpires: required(process.env.JWT_ACCESS_EXPIRES, 'JWT_ACCESS_EXPIRES'),

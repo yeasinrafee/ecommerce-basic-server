@@ -49,7 +49,8 @@ const generatePublicId = (prefix: string, entityId: string) => {
 };
 
 const createFolderPath = ({ projectFolder, subFolder }: UploadContext) => {
-	return ['sp-files', projectFolder, subFolder]
+	const parent = env.uploadsParentFolder;
+	return [parent, projectFolder, subFolder]
 		.filter((part): part is string => Boolean(part && part.trim().length > 0))
 		.join('/');
 };
