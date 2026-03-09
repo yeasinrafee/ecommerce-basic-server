@@ -11,6 +11,8 @@ import { brandRoutes } from '../modules/brand/brand.route.js';
 import { attributeRoutes } from '../modules/attribute/attribute.route.js';
 import { adminRoutes } from '../modules/admin/admin.route.js';
 import { shippingRoutes } from '../modules/shipping/shipping.route.js';
+import { zoneRoutes } from '../modules/zone/zone.route.js';
+import { zonePolicyRoutes } from '../modules/zone-policy/zone-policy.route.js';
 
 const router = Router();
 
@@ -25,6 +27,8 @@ router.use('/uploads', uploadRoutes);
 router.use('/attributes', attributeRoutes);
 router.use('/brands', brandRoutes);
 router.use('/shipping', shippingRoutes);
+router.use('/zones', zoneRoutes);
+router.use('/zone-policies', zonePolicyRoutes);
 router.use('/admins', adminRoutes);
 
 export const apiRoutes = router;
