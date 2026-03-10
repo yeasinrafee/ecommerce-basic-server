@@ -48,7 +48,6 @@ const createAdmin = async (
     const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
       projectFolder: "admins",
       entityId: generatedUserId,
-      subFolder: generatedUserId,
       fileNamePrefix: "admin",
     });
 

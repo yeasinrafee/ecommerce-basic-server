@@ -50,7 +50,6 @@ const updateAdmin = async (req: Request, res: Response) => {
             const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
                 projectFolder: 'admins',
                 entityId: id,
-                subFolder: id,
                 fileNamePrefix: 'admin'
             });
 

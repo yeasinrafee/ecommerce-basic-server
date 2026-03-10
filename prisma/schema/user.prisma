@@ -19,6 +19,10 @@ model User {
 
   admins Admin[]
   blogs  Blog[]
+
+  comments Comment[]
+
+  customers Customer[]
 }
 
 model Admin {

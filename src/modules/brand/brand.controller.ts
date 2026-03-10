@@ -17,7 +17,6 @@ const createBrand = async (req: Request, res: Response) => {
 			const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
 				projectFolder: 'brands',
 				entityId: generatedId,
-				subFolder: generatedId,
 				fileNamePrefix: 'brand'
 			});
 
@@ -64,7 +63,6 @@ const updateBrand = async (req: Request, res: Response) => {
 			const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
 				projectFolder: 'brands',
 				entityId: id,
-				subFolder: id,
 				fileNamePrefix: 'brand'
 			});
 

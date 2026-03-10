@@ -34,12 +34,12 @@ const createBlog = async (req: Request, res: Response) => {
         const files = normalizeUploadedFiles(req.files);
         if (files.length > 0) {
             const generatedId = crypto.randomUUID();
-            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
-                projectFolder: 'blogs',
-                entityId: generatedId,
-                subFolder: generatedId,
-                fileNamePrefix: 'blog'
-            });
+                // upload into the common `blogs` folder (no subfolder per upload)
+                const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
+                    projectFolder: 'blogs',
+                    entityId: generatedId,
+                    fileNamePrefix: 'blog'
+                });
 
             const uploaded = uploadedFiles[0];
             imageUrl = uploaded?.secureUrl ?? null;
@@ -79,7 +79,6 @@ const updateBlog = async (req: Request, res: Response) => {
             const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
                 projectFolder: 'blogs',
                 entityId: id,
-                subFolder: id,
                 fileNamePrefix: 'blog'
             });
 

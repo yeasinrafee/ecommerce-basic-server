@@ -17,7 +17,6 @@ const createCategory = async (req: Request, res: Response) => {
             const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
                 projectFolder: 'categories',
                 entityId: generatedId,
-                subFolder: generatedId,
                 fileNamePrefix: 'category'
             });
 
@@ -61,7 +60,6 @@ const updateCategory = async (req: Request, res: Response) => {
             const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
                 projectFolder: 'categories',
                 entityId: id,
-                subFolder: id,
                 fileNamePrefix: 'category'
             });
 
