@@ -24,13 +24,22 @@ const createShipping = async (dto: CreateShippingDto) => {
     ]);
   }
 
+  const hasDimensions =
+    typeof (dto as any).length === 'number' && !Number.isNaN((dto as any).length) &&
+    typeof (dto as any).width === 'number' && !Number.isNaN((dto as any).width) &&
+    typeof (dto as any).height === 'number' && !Number.isNaN((dto as any).height);
+
+  const computedVolume = hasDimensions
+    ? (Number((dto as any).length) * Number((dto as any).width) * Number((dto as any).height))
+    : null;
+
   const created = await prisma.shipping.create({
     data: {
       minimumFreeShippingAmount: dto.minimumFreeShippingAmount,
       tax: dto.tax,
       defaultShippingCharge: dto.defaultShippingCharge,
       maximumWeight: dto.maximumWeight ?? null,
-      maximumVolume: dto.maximumVolume ?? null,
+      maximumVolume: computedVolume ?? null,
       chargePerWeight: dto.chargePerWeight ?? null,
       chargePerVolume: dto.chargePerVolume ?? null
     }
@@ -47,7 +56,26 @@ const updateShipping = async (id: string, payload: UpdateShippingDto) => {
     ]);
   }
 
-  const updated = await prisma.shipping.update({ where: { id }, data: payload as any });
+  const dataToUpdate: any = { ...payload };
+
+  // If dimensions provided, compute maximumVolume and remove dimension fields
+  const length = (dataToUpdate as any).length;
+  const width = (dataToUpdate as any).width;
+  const height = (dataToUpdate as any).height;
+
+  const hasDimensions =
+    typeof length === 'number' && !Number.isNaN(length) &&
+    typeof width === 'number' && !Number.isNaN(width) &&
+    typeof height === 'number' && !Number.isNaN(height);
+
+  if (hasDimensions) {
+    dataToUpdate.maximumVolume = Number(length) * Number(width) * Number(height);
+    delete dataToUpdate.length;
+    delete dataToUpdate.width;
+    delete dataToUpdate.height;
+  }
+
+  const updated = await prisma.shipping.update({ where: { id }, data: dataToUpdate as any });
   return updated;
 };
 
