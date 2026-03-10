@@ -46,7 +46,9 @@ const createShipping = async (dto: CreateShippingDto) => {
       width: (dto as any).width ?? null,
       height: (dto as any).height ?? null,
       chargePerWeight: dto.chargePerWeight ?? null,
-      chargePerVolume: dto.chargePerVolume ?? null
+      	  chargePerVolume: dto.chargePerVolume ?? null,
+      	  weightUnit: (dto as any).weightUnit ?? null,
+      	  volumeUnit: (dto as any).volumeUnit ?? null
     }
   });
 
@@ -78,7 +80,7 @@ const updateShipping = async (id: string, payload: UpdateShippingDto) => {
   }
 
   // Remove undefined keys so Prisma doesn't try to set undefined values. Keep nulls.
-  ['length', 'width', 'height', 'maximumVolume'].forEach((k) => {
+  ['length', 'width', 'height', 'maximumVolume', 'weightUnit', 'volumeUnit'].forEach((k) => {
     if ((dataToUpdate as any)[k] === undefined) delete (dataToUpdate as any)[k];
   });
 
@@ -98,10 +100,17 @@ const deleteShipping = async (id: string) => {
   return true;
 };
 
+const resetShipping = async () => {
+  // Remove all shipping records. Keeps behavior simple since only one record is expected.
+  await prisma.shipping.deleteMany();
+  return true;
+};
+
 export const shippingService = {
   getShipping,
   getShippingById,
   createShipping,
   updateShipping,
   deleteShipping
+  ,resetShipping
 };
