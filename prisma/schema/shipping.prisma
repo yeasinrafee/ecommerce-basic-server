@@ -5,6 +5,9 @@ model Shipping {
     defaultShippingCharge     Float
     maximumWeight             Float?
     maximumVolume             Float?
+    length                    Float?
+    width                     Float?
+    height                    Float?
     chargePerWeight           Float?
     chargePerVolume           Float?
     createdAt                 DateTime @default(now())

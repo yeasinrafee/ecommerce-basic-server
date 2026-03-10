@@ -39,7 +39,12 @@ const createShipping = async (dto: CreateShippingDto) => {
       tax: dto.tax,
       defaultShippingCharge: dto.defaultShippingCharge,
       maximumWeight: dto.maximumWeight ?? null,
-      maximumVolume: computedVolume ?? null,
+      // store computed volume if dimensions present, otherwise fall back to any explicit maximumVolume
+      maximumVolume: computedVolume ?? (dto as any).maximumVolume ?? null,
+      // persist individual dimensions as provided (cm)
+      length: (dto as any).length ?? null,
+      width: (dto as any).width ?? null,
+      height: (dto as any).height ?? null,
       chargePerWeight: dto.chargePerWeight ?? null,
       chargePerVolume: dto.chargePerVolume ?? null
     }
@@ -58,7 +63,7 @@ const updateShipping = async (id: string, payload: UpdateShippingDto) => {
 
   const dataToUpdate: any = { ...payload };
 
-  // If dimensions provided, compute maximumVolume and remove dimension fields
+  // compute maximumVolume if complete dimensions are provided
   const length = (dataToUpdate as any).length;
   const width = (dataToUpdate as any).width;
   const height = (dataToUpdate as any).height;
@@ -70,10 +75,12 @@ const updateShipping = async (id: string, payload: UpdateShippingDto) => {
 
   if (hasDimensions) {
     dataToUpdate.maximumVolume = Number(length) * Number(width) * Number(height);
-    delete dataToUpdate.length;
-    delete dataToUpdate.width;
-    delete dataToUpdate.height;
   }
+
+  // Remove undefined keys so Prisma doesn't try to set undefined values. Keep nulls.
+  ['length', 'width', 'height', 'maximumVolume'].forEach((k) => {
+    if ((dataToUpdate as any)[k] === undefined) delete (dataToUpdate as any)[k];
+  });
 
   const updated = await prisma.shipping.update({ where: { id }, data: dataToUpdate as any });
   return updated;
