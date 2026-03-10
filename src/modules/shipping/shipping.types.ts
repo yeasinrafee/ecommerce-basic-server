@@ -3,6 +3,7 @@ export type CreateShippingDto = {
   tax: number;
   defaultShippingCharge: number;
   maximumWeight?: number | null;
+  maximumVolume?: number | null;
   length?: number | null;
   width?: number | null;
   height?: number | null;

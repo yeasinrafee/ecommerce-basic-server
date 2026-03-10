@@ -56,8 +56,11 @@ const createBlog = async ({ title, image, authorName, shortDescription, content,
             content,
             user: { connect: { id: userId } },
             category: categoryId ? { connect: { id: categoryId } } : undefined,
-            tags: Array.isArray(tagIds) && tagIds.length > 0 ? { create: tagIds.map((t) => ({ tag: { connect: { id: t } } })) } : undefined,
-            seos: seo ? { create: { title: seo.title, description: seo.description ?? undefined, keyword: Array.isArray(seo.keyword) ? seo.keyword : [] } } : undefined
+                        tags: Array.isArray(tagIds) && tagIds.length > 0 ? { create: tagIds.map((t) => ({ tag: { connect: { id: t } } })) } : undefined,
+                        seos:
+                            seo && (seo.title || seo.description || (Array.isArray(seo.keyword) && seo.keyword.length > 0))
+                                ? { create: { title: seo.title ?? '', description: seo.description ?? undefined, keyword: Array.isArray(seo.keyword) ? seo.keyword : [] } }
+                                : undefined
         },
         include: { category: true, tags: { include: { tag: true } }, user: true, seos: true }
     });
