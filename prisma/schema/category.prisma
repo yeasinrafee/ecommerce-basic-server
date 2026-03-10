@@ -16,5 +16,25 @@ model BlogCategory {
   createdAt DateTime               @default(now())
   updatedAt DateTime               @updatedAt
 
-  blogs Blog[]
+  blogs     CategoriesOnblogs[]
+}
+
+model CategoriesOnblogs {
+  blog       Blog        @relation(fields: [blogId], references: [id])
+  blogId     String
+  category   BlogCategory @relation(fields: [categoryId], references: [id])
+  categoryId String
+  assignedAt DateTime     @default(now())
+
+  @@id([blogId, categoryId])
+}
+
+model CategoriesOnProducts {
+  product    Product         @relation(fields: [productId], references: [id])
+  productId  String
+  category   ProductCategory @relation(fields: [categoryId], references: [id])
+  categoryId String
+  assignedAt DateTime        @default(now())
+
+  @@id([productId, categoryId])
 }

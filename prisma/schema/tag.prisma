@@ -4,6 +4,10 @@ model ProductTag {
   slug      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  
+
+  tagsOnProducts TagsOnProducts[]
 }
 
 model BlogTag {
@@ -12,5 +16,27 @@ model BlogTag {
   slug      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  blogs     BlogsOnTags[]
+ 
+
+  tagsOnBlogs TagsOnBlogs[]
+}
+
+model TagsOnBlogs {
+    blog       Blog     @relation(fields: [blogId], references: [id])
+    blogId     String
+    tag        BlogTag  @relation(fields: [tagId], references: [id])
+    tagId      String
+    assignedAt DateTime @default(now())
+
+    @@id([blogId, tagId])
+}
+
+model TagsOnProducts {
+  product   Product    @relation(fields: [productId], references: [id])
+  productId String
+  tag       ProductTag @relation(fields: [tagId], references: [id])
+  tagId     String
+  assignedAt DateTime  @default(now())
+
+  @@id([productId, tagId])
 }

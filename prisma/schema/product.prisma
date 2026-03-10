@@ -1,17 +1,43 @@
-model Product {
-  id         String                 @id @default(cuid())
-  name       String
-  categories CategoriesOnProducts[]
+enum DiscountType {
+  PERCENTAGE_DISCOUNT
+  FLAT_DISCOUNT
 }
 
-model CategoriesOnProducts {
-  product    Product         @relation(fields: [productId], references: [id])
-  productId  String
-  category   ProductCategory @relation(fields: [categoryId], references: [id])
-  categoryId String
-  assignedAt DateTime        @default(now())
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+}
 
-  @@id([productId, categoryId])
+model Product {
+  id                String        @id @default(cuid())
+  name              String
+  slug              String        @unique
+  shortDescription  String?
+  description       String?
+  Baseprice         Float
+  finalPrice        Float
+  discountType      DiscountType?
+  discountValue     Float?
+  stock             Int
+  sku               String?       @unique
+  discountStartDate DateTime?
+  discountEndDate   DateTime?
+  brandId           String?
+  brand             Brand?        @relation(fields: [brandId], references: [id])
+  image             String?
+  status            Status        @default(ACTIVE)
+  stockStatus       StockStatus   @default(IN_STOCK)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  categories CategoriesOnProducts[]
+
+  tags TagsOnProducts[]
+
+  additionalInformations AdditionalInformation[]
+
+  seos Seo[]
 }
 
 model Brand {
@@ -19,6 +45,18 @@ model Brand {
   name      String   @unique
   slug      String   @unique
   image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+}
+
+model AdditionalInformation {
+  id        String   @id @default(uuid())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  name      String
+  value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
