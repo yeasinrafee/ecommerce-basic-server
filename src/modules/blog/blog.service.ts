@@ -20,7 +20,8 @@ const getBlogs = async ({ page = 1, limit = 10, searchTerm }: BlogListQuery = {}
             include: {
                 category: true,
                 tags: { include: { tag: true } },
-                user: true
+                user: true,
+                seos: true
             }
         }),
         prisma.blog.count({ where })
@@ -38,10 +39,10 @@ const getBlogs = async ({ page = 1, limit = 10, searchTerm }: BlogListQuery = {}
 };
 
 const getBlogById = async (id: string) => {
-    return prisma.blog.findUnique({ where: { id }, include: { category: true, tags: { include: { tag: true } }, user: true } });
+    return prisma.blog.findUnique({ where: { id }, include: { category: true, tags: { include: { tag: true } }, user: true, seos: true } });
 };
 
-const createBlog = async ({ title, image, authorName, shortDescription, content, categoryId, tagIds = [], userId }: CreateBlogDto) => {
+const createBlog = async ({ title, image, authorName, shortDescription, content, categoryId, tagIds = [], userId, seo }: CreateBlogDto) => {
     if (!userId) {
         throw new AppError(401, 'Unauthorized', [{ message: 'Missing user id', code: 'UNAUTHORIZED' }]);
     }
@@ -53,11 +54,12 @@ const createBlog = async ({ title, image, authorName, shortDescription, content,
             authorName,
             shortDescription,
             content,
-            category: { connect: { id: categoryId } },
             user: { connect: { id: userId } },
-            tags: Array.isArray(tagIds) && tagIds.length > 0 ? { create: tagIds.map((t) => ({ tag: { connect: { id: t } } })) } : undefined
+            category: categoryId ? { connect: { id: categoryId } } : undefined,
+            tags: Array.isArray(tagIds) && tagIds.length > 0 ? { create: tagIds.map((t) => ({ tag: { connect: { id: t } } })) } : undefined,
+            seos: seo ? { create: { title: seo.title, description: seo.description ?? undefined, keyword: Array.isArray(seo.keyword) ? seo.keyword : [] } } : undefined
         },
-        include: { category: true, tags: { include: { tag: true } }, user: true }
+        include: { category: true, tags: { include: { tag: true } }, user: true, seos: true }
     });
 
     return created;
@@ -79,7 +81,6 @@ const updateBlog = async (id: string, payload: UpdateBlogDto, newUploadedPublicI
         if (payload.authorName) data.authorName = payload.authorName;
         if (payload.shortDescription) data.shortDescription = payload.shortDescription;
         if (payload.content) data.content = payload.content;
-        if (payload.categoryId) data.category = { connect: { id: payload.categoryId } };
 
         if (Object.keys(data).length > 0) {
             await tx.blog.update({ where: { id }, data });
@@ -87,14 +88,33 @@ const updateBlog = async (id: string, payload: UpdateBlogDto, newUploadedPublicI
 
         if (payload.tagIds !== undefined) {
             // replace tag relations
-            await tx.blogsOnTags.deleteMany({ where: { blogId: id } });
+            await tx.tagsOnBlogs.deleteMany({ where: { blogId: id } });
             if (Array.isArray(payload.tagIds) && payload.tagIds.length > 0) {
                 const createData = payload.tagIds.map((t) => ({ blogId: id, tagId: t }));
-                await tx.blogsOnTags.createMany({ data: createData });
+                await tx.tagsOnBlogs.createMany({ data: createData });
             }
         }
 
-        return tx.blog.findUnique({ where: { id }, include: { category: true, tags: { include: { tag: true } }, user: true } });
+        if (payload.categoryId !== undefined) {
+            // update single category relation
+            if (payload.categoryId) {
+                await tx.blog.update({ where: { id }, data: { category: { connect: { id: payload.categoryId } } } });
+            } else {
+                // if empty/null provided, clear category
+                await tx.blog.update({ where: { id }, data: { category: { disconnect: true } } });
+            }
+        }
+
+        if (payload.seo !== undefined) {
+            // replace seo rows for this blog with the provided seo (if any)
+            await tx.seo.deleteMany({ where: { blogId: id } });
+            const seoObj = payload.seo as any;
+            if (seoObj && (seoObj.title || seoObj.description || (Array.isArray(seoObj.keyword) && seoObj.keyword.length > 0))) {
+                await tx.seo.create({ data: { title: seoObj.title, description: seoObj.description ?? undefined, keyword: Array.isArray(seoObj.keyword) ? seoObj.keyword : [], blog: { connect: { id } } } });
+            }
+        }
+
+        return tx.blog.findUnique({ where: { id }, include: { category: true, tags: { include: { tag: true } }, user: true, seos: true } });
     });
 
     // Post-update cleanup: delete previous cloud asset if replaced
@@ -143,8 +163,8 @@ const deleteBlog = async (id: string) => {
         }
     }
 
-    // delete join rows first then blog
-    await prisma.$transaction([prisma.blogsOnTags.deleteMany({ where: { blogId: id } }), prisma.blog.delete({ where: { id } })]);
+    // delete tag join rows and seos then blog
+    await prisma.$transaction([prisma.tagsOnBlogs.deleteMany({ where: { blogId: id } }), prisma.seo.deleteMany({ where: { blogId: id } }), prisma.blog.delete({ where: { id } })]);
     return true;
 };
 

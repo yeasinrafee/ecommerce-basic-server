@@ -4,8 +4,13 @@ export type CreateBlogDto = {
     authorName: string;
     shortDescription: string;
     content: string;
-    categoryId: string;
+    categoryId?: string;
     tagIds?: string[];
+    seo?: {
+        title: string;
+        description?: string | null;
+        keyword?: string[];
+    } | null;
     userId?: string;
 };
 

@@ -13,8 +13,9 @@ model Blog {
     updatedAt        DateTime      @updatedAt
 
     seos Seo[]
-    tagsOnBlogs TagsOnBlogs[]
-    categoriesOnblogs CategoriesOnblogs[]
+    tags TagsOnBlogs[]
+    categoryId String?
+    category BlogCategory? @relation(fields: [categoryId], references: [id])
 }
 
 model Comment {

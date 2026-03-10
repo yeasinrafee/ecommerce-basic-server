@@ -5,7 +5,7 @@ import { normalizeUploadedFiles, uploadMultipleFilesToCloudinary, deleteCloudina
 import crypto from 'node:crypto';
 import { AppError } from '../../common/errors/app-error.js';
 
-const parseTagIds = (input: any): string[] => {
+const parseIds = (input: any): string[] => {
     if (!input) return [];
     if (Array.isArray(input)) return input.map(String).filter(Boolean);
     if (typeof input === 'string') {
@@ -22,10 +22,26 @@ const parseTagIds = (input: any): string[] => {
     return [];
 };
 
+const parseSeo = (input: any) => {
+    if (!input) return null;
+    if (typeof input === 'string') {
+        try {
+            const parsed = JSON.parse(input);
+            return parsed;
+        } catch (_err) {
+            return null;
+        }
+    }
+    if (typeof input === 'object') return input;
+    return null;
+};
+
 const createBlog = async (req: Request, res: Response) => {
-    const { title, authorName, shortDescription, content, categoryId } = req.body;
+    const { title, authorName, shortDescription, content } = req.body;
     const rawTagIds = req.body.tagIds;
-    const tagIds = parseTagIds(rawTagIds);
+    const tagIds = parseIds(rawTagIds);
+    const categoryId = typeof req.body.categoryId === 'string' ? req.body.categoryId : undefined;
+    const seo = parseSeo(req.body.seo);
 
     let newlyUploadedPublicId: string | null = null;
     let imageUrl: string | null | undefined = undefined;
@@ -50,7 +66,7 @@ const createBlog = async (req: Request, res: Response) => {
         const userId = req.user?.id as string | undefined;
         if (!userId) throw new AppError(401, 'Authentication required', [{ message: 'User not found on request', code: 'AUTH_MISSING' }]);
 
-        const created = await blogService.createBlog({ title, image: imageUrl ?? null, authorName, shortDescription, content, categoryId, tagIds, userId });
+        const created = await blogService.createBlog({ title, image: imageUrl ?? null, authorName, shortDescription, content, categoryId, tagIds, userId, seo });
 
         sendResponse({ res, statusCode: 201, success: true, message: 'Blog created', data: created });
         return;
@@ -87,8 +103,10 @@ const updateBlog = async (req: Request, res: Response) => {
             newlyUploadedPublicId = uploaded?.publicId ?? null;
         }
 
-        // normalize tagIds if provided
-        if (payload.tagIds !== undefined) payload.tagIds = parseTagIds(payload.tagIds);
+        // normalize tagIds and categoryId if provided
+        if (payload.tagIds !== undefined) payload.tagIds = parseIds(payload.tagIds);
+        // categoryId should be a string when provided; leave as-is
+        if (payload.seo !== undefined) payload.seo = parseSeo(payload.seo);
 
         const updated = await blogService.updateBlog(id, payload, newlyUploadedPublicId);
 
