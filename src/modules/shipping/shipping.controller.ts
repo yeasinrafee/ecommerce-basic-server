@@ -6,7 +6,7 @@ import type { CreateShippingDto } from './shipping.types.js';
 
 const createShipping = async (req: Request, res: Response) => {
   const body = req.body || {};
-  const { minimumFreeShippingAmount, tax, defaultShippingCharge, maximumWeight, maximumVolume, chargePerWeight, chargePerVolume } = body;
+  const { minimumFreeShippingAmount, tax, defaultShippingCharge, maximumWeight, maximumVolume, chargePerWeight, chargePerVolume, length, width, height, weightUnit, volumeUnit } = body;
 
   if (minimumFreeShippingAmount === undefined || tax === undefined || defaultShippingCharge === undefined) {
     throw new AppError(400, 'Missing required fields', [
@@ -19,9 +19,15 @@ const createShipping = async (req: Request, res: Response) => {
     tax: Number(tax),
     defaultShippingCharge: Number(defaultShippingCharge),
     maximumWeight: maximumWeight !== undefined && maximumWeight !== null ? Number(maximumWeight) : undefined,
+    // Accept either explicit maximumVolume or dimensions (length,width,height in cm). Service will compute final volume.
     maximumVolume: maximumVolume !== undefined && maximumVolume !== null ? Number(maximumVolume) : undefined,
+    length: length !== undefined && length !== null ? Number(length) : undefined,
+    width: width !== undefined && width !== null ? Number(width) : undefined,
+    height: height !== undefined && height !== null ? Number(height) : undefined,
     chargePerWeight: chargePerWeight !== undefined && chargePerWeight !== null ? Number(chargePerWeight) : undefined,
-    chargePerVolume: chargePerVolume !== undefined && chargePerVolume !== null ? Number(chargePerVolume) : undefined
+    chargePerVolume: chargePerVolume !== undefined && chargePerVolume !== null ? Number(chargePerVolume) : undefined,
+    weightUnit: weightUnit !== undefined && weightUnit !== null ? Number(weightUnit) : undefined,
+    volumeUnit: volumeUnit !== undefined && volumeUnit !== null ? Number(volumeUnit) : undefined
   };
 
   const created = await shippingService.createShipping(dto);
@@ -32,7 +38,7 @@ const createShipping = async (req: Request, res: Response) => {
 const updateShipping = async (req: Request, res: Response) => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const payload = req.body || {};
-  const numericFields = ['minimumFreeShippingAmount', 'tax', 'defaultShippingCharge', 'maximumWeight', 'maximumVolume', 'chargePerWeight', 'chargePerVolume'];
+  const numericFields = ['minimumFreeShippingAmount', 'tax', 'defaultShippingCharge', 'maximumWeight', 'maximumVolume', 'chargePerWeight', 'chargePerVolume', 'length', 'width', 'height', 'weightUnit', 'volumeUnit'];
   const castPayload: any = { ...payload };
   numericFields.forEach((f) => {
     if (f in castPayload) {
@@ -75,10 +81,17 @@ const deleteShipping = async (req: Request, res: Response) => {
   sendResponse({ res, statusCode: 200, success: true, message: 'Shipping deleted', data: null });
 };
 
+const resetShipping = async (req: Request, res: Response) => {
+  await shippingService.resetShipping();
+
+  sendResponse({ res, statusCode: 200, success: true, message: 'Shipping reset', data: null });
+};
+
 export const shippingController = {
   createShipping,
   updateShipping,
   getShipping,
   getShippingById,
   deleteShipping
+  ,resetShipping
 };

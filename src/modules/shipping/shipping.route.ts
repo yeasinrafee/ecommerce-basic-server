@@ -6,6 +6,7 @@ const router = Router();
 
 router.post('/create', asyncHandler(shippingController.createShipping));
 router.patch('/update/:id', asyncHandler(shippingController.updateShipping));
+router.delete('/reset', asyncHandler(shippingController.resetShipping));
 router.get('/get', asyncHandler(shippingController.getShipping));
 router.get('/get/:id', asyncHandler(shippingController.getShippingById));
 router.delete('/delete/:id', asyncHandler(shippingController.deleteShipping));

@@ -7,22 +7,15 @@ model Blog {
     authorName       String
     shortDescription String
     content          String
-    category         BlogCategory  @relation(fields: [categoryId], references: [id])
-    categoryId       String
-    tags             BlogsOnTags[]
+   
     comments         Comment[]
     createdAt        DateTime      @default(now())
     updatedAt        DateTime      @updatedAt
-}
 
-model BlogsOnTags {
-    blog       Blog     @relation(fields: [blogId], references: [id])
-    blogId     String
-    tag        BlogTag  @relation(fields: [tagId], references: [id])
-    tagId      String
-    assignedAt DateTime @default(now())
-
-    @@id([blogId, tagId])
+    seos Seo[]
+    tags TagsOnBlogs[]
+    categoryId String?
+    category BlogCategory? @relation(fields: [categoryId], references: [id])
 }
 
 model Comment {
