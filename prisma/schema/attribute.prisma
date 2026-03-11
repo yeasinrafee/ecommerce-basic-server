@@ -5,4 +5,6 @@ model Attribute {
   values    String[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  productVariations ProductVariation[]
 }
