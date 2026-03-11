@@ -44,7 +44,13 @@ const deleteImage = async (req: Request, res: Response) => {
         throw new AppError(400, 'publicId or url is required', [{ message: 'Provide publicId or url to delete', code: 'MISSING_PUBLIC_ID' }]);
     }
 
-    const pid = publicId ?? getPublicIdFromUrl(url);
+    const derivedFromUrl = getPublicIdFromUrl(url);
+    const fallbackAsPublicId =
+        !publicId && !derivedFromUrl && typeof url === 'string' && url.trim().length > 0 && !/^https?:\/\//i.test(url)
+            ? url.trim()
+            : null;
+
+    const pid = publicId ?? derivedFromUrl ?? fallbackAsPublicId;
     if (!pid) {
         throw new AppError(400, 'Could not determine public id from url', [{ message: 'Invalid url or publicId', code: 'INVALID_PUBLIC_ID' }]);
     }

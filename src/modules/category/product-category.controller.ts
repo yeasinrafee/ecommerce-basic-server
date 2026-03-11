@@ -5,7 +5,7 @@ import { normalizeUploadedFiles, uploadMultipleFilesToCloudinary, deleteCloudina
 import crypto from 'node:crypto';
 
 const createCategory = async (req: Request, res: Response) => {
-    const { name } = req.body;
+    const { name, parentId } = req.body;
 
     let newlyUploadedPublicId: string | null = null;
     let imageUrl: string | null | undefined = undefined;
@@ -25,7 +25,7 @@ const createCategory = async (req: Request, res: Response) => {
             newlyUploadedPublicId = uploaded?.publicId ?? null;
         }
 
-        const created = await productCategoryService.createCategory({ name, image: imageUrl ?? null });
+        const created = await productCategoryService.createCategory({ name, image: imageUrl ?? null, parentId: parentId ?? null });
 
         sendResponse({
             res,
