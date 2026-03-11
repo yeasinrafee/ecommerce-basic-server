@@ -1,20 +1,23 @@
 model ProductCategory {
-  id        String                 @id @default(uuid())
-  name      String                 @unique
-  slug      String                 @unique
-  image     String?
-  createdAt DateTime               @default(now())
-  updatedAt DateTime               @updatedAt
-  products  CategoriesOnProducts[]
+  id            String                 @id @default(uuid())
+  name          String                 @unique
+  slug          String                 @unique
+  image         String?
+  parentId      String?
+  parent        ProductCategory?       @relation("CategorySubCategory", fields: [parentId], references: [id])
+  subCategories ProductCategory[]      @relation("CategorySubCategory")
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  products      CategoriesOnProducts[]
 }
 
 model BlogCategory {
-  id        String                 @id @default(uuid())
-  name      String                 @unique
-  slug      String                 @unique
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
   image     String?
-  createdAt DateTime               @default(now())
-  updatedAt DateTime               @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   blogs     Blog[]
 }
 

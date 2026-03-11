@@ -18,7 +18,8 @@ const getCategories = async ({ page = 1, limit = 10, searchTerm }: CategoryListQ
             where,
             skip,
             take: limit,
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            include: { subCategories: true }
         }),
         prisma.productCategory.count({ where })
     ]);
@@ -38,7 +39,7 @@ const getCategoryById = async (id: string) => {
     return prisma.productCategory.findUnique({ where: { id } });
 };
 
-const createCategory = async ({ name, image }: CreateCategoryDto) => {
+const createCategory = async ({ name, image, parentId }: CreateCategoryDto) => {
     const cleanNameKey = toUpperUnderscore(name);
     const slug = toSlug(name);
 
@@ -50,7 +51,16 @@ const createCategory = async ({ name, image }: CreateCategoryDto) => {
         ]);
     }
 
-    const created = await prisma.productCategory.create({ data: { name, slug, image } });
+    if (parentId) {
+        const parent = await prisma.productCategory.findUnique({ where: { id: parentId } });
+        if (!parent) {
+            throw new AppError(400, 'Parent category not found', [
+                { message: 'Provided parentId does not match any category', code: 'PARENT_NOT_FOUND' }
+            ]);
+        }
+    }
+
+    const created = await prisma.productCategory.create({ data: { name, slug, image, parentId: parentId ?? null } });
     return created;
 };
 
@@ -65,6 +75,28 @@ const updateCategory = async (id: string, payload: UpdateCategoryDto, newUploade
     const previousPublicId = getPublicIdFromUrl(existing.image) ?? null;
 
     const updated = await prisma.$transaction(async (tx) => {
+        // validate parent change if provided
+        if (payload.parentId !== undefined && payload.parentId !== null) {
+            if (payload.parentId === id) {
+                throw new AppError(400, 'Invalid parent', [ { message: 'Category cannot be its own parent', code: 'INVALID_PARENT' } ]);
+            }
+
+            const parent = await tx.productCategory.findUnique({ where: { id: payload.parentId } });
+            if (!parent) {
+                throw new AppError(400, 'Parent category not found', [ { message: 'Provided parentId does not match any category', code: 'PARENT_NOT_FOUND' } ]);
+            }
+
+            // detect potential cycles by walking up the parent chain
+            let currentParentId = parent.parentId ?? null;
+            while (currentParentId) {
+                if (currentParentId === id) {
+                    throw new AppError(400, 'Invalid parent', [ { message: 'Setting this parent would create a cycle', code: 'PARENT_CYCLE' } ]);
+                }
+                const next = await tx.productCategory.findUnique({ where: { id: currentParentId }, select: { parentId: true } });
+                currentParentId = next?.parentId ?? null;
+            }
+        }
+
         if (payload.name) {
             const cleanNameKey = toUpperUnderscore(payload.name);
             const slug = toSlug(payload.name);
@@ -136,7 +168,7 @@ const deleteCategory = async (id: string) => {
 };
 
 const getAllCategories = async () => {
-    return prisma.productCategory.findMany({ orderBy: { createdAt: 'desc' } });
+    return prisma.productCategory.findMany({ orderBy: { createdAt: 'desc' }, include: { subCategories: true } });
 };
 
 export const productCategoryService = {
