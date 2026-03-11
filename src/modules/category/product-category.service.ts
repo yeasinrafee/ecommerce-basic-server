@@ -7,6 +7,32 @@ import type { CreateCategoryDto, UpdateCategoryDto, ServiceListResult, CategoryL
 import type { Prisma } from '@prisma/client';
 import { deleteCloudinaryAsset, getPublicIdFromUrl } from '../../common/utils/file-upload.js';
 
+const generateUniqueSlug = async (name: string, excludeId?: string) => {
+    const base = toSlug(name);
+    let slug = base;
+    let counter = 1;
+
+    while (true) {
+        const where: any = excludeId ? { slug, NOT: { id: excludeId } } : { slug };
+        const found = await prisma.productCategory.findFirst({ where, select: { id: true } });
+        if (!found) return slug;
+        slug = `${base}-${counter++}`;
+    }
+};
+
+const generateUniqueSlugTx = async (tx: any, name: string, excludeId?: string) => {
+    const base = toSlug(name);
+    let slug = base;
+    let counter = 1;
+
+    while (true) {
+        const where: any = excludeId ? { slug, NOT: { id: excludeId } } : { slug };
+        const found = await tx.productCategory.findFirst({ where, select: { id: true } });
+        if (!found) return slug;
+        slug = `${base}-${counter++}`;
+    }
+};
+
 const getCategories = async ({ page = 1, limit = 10, searchTerm }: CategoryListQuery = {}): Promise<ServiceListResult<any>> => {
     const skip = (page - 1) * limit;
     const where: Prisma.ProductCategoryWhereInput = searchTerm
@@ -41,17 +67,18 @@ const getCategoryById = async (id: string) => {
 
 const createCategory = async ({ name, image, parentId }: CreateCategoryDto) => {
     const cleanNameKey = toUpperUnderscore(name);
-    const slug = toSlug(name);
 
-    const existing = await prisma.productCategory.findMany({ select: { id: true, name: true } });
-    const conflict = existing.find((c) => toUpperUnderscore(c.name) === cleanNameKey);
-    if (conflict) {
-        throw new AppError(400, 'Category name already exists', [
-            { message: 'A category with that name exists', code: 'NAME_CONFLICT' }
-        ]);
-    }
-
-    if (parentId) {
+    // If creating a top-level (parent) category, ensure name uniqueness among parents
+    if (!parentId) {
+        const parents = await prisma.productCategory.findMany({ where: { parentId: null }, select: { id: true, name: true } });
+        const conflict = parents.find((c) => toUpperUnderscore(c.name) === cleanNameKey);
+        if (conflict) {
+            throw new AppError(400, 'Category name already exists', [
+                { message: 'A parent category with that name exists', code: 'NAME_CONFLICT' }
+            ]);
+        }
+    } else {
+        // validate provided parent exists
         const parent = await prisma.productCategory.findUnique({ where: { id: parentId } });
         if (!parent) {
             throw new AppError(400, 'Parent category not found', [
@@ -60,7 +87,10 @@ const createCategory = async ({ name, image, parentId }: CreateCategoryDto) => {
         }
     }
 
-    const created = await prisma.productCategory.create({ data: { name, slug, image, parentId: parentId ?? null } });
+    // generate a unique slug (appends -1, -2, ... if needed)
+    const uniqueSlug = await generateUniqueSlug(name);
+
+    const created = await prisma.productCategory.create({ data: { name, slug: uniqueSlug, image, parentId: parentId ?? null } });
     return created;
 };
 
@@ -75,7 +105,7 @@ const updateCategory = async (id: string, payload: UpdateCategoryDto, newUploade
     const previousPublicId = getPublicIdFromUrl(existing.image) ?? null;
 
     const updated = await prisma.$transaction(async (tx) => {
-        // validate parent change if provided
+        // If parentId explicitly provided and non-null, validate parent exists and prevent self-parent/cycles
         if (payload.parentId !== undefined && payload.parentId !== null) {
             if (payload.parentId === id) {
                 throw new AppError(400, 'Invalid parent', [ { message: 'Category cannot be its own parent', code: 'INVALID_PARENT' } ]);
@@ -97,22 +127,24 @@ const updateCategory = async (id: string, payload: UpdateCategoryDto, newUploade
             }
         }
 
-        if (payload.name) {
-            const cleanNameKey = toUpperUnderscore(payload.name);
-            const slug = toSlug(payload.name);
+            // Determine what the final parentId will be after this update
+            const finalParentId = payload.parentId !== undefined ? payload.parentId : existing.parentId;
+            const nameToCheck = payload.name ?? existing.name;
 
+            // Ensure name uniqueness across all categories (excluding this record)
             const others = await tx.productCategory.findMany({ where: { NOT: { id } }, select: { id: true, name: true } });
-            const conflict = others.find((c) => toUpperUnderscore(c.name) === cleanNameKey);
-            if (conflict) {
-                throw new AppError(400, 'Category name already exists', [
-                    { message: 'Another category uses this name', code: 'NAME_CONFLICT' }
-                ]);
+            const globalConflict = others.find((c) => toUpperUnderscore(c.name) === toUpperUnderscore(nameToCheck));
+            if (globalConflict) {
+                throw new AppError(400, 'Category name already exists', [ { message: 'Another category uses this name', code: 'NAME_CONFLICT' } ]);
             }
 
-            await tx.productCategory.update({ where: { id }, data: { name: payload.name, slug } });
-        } else {
-            await tx.productCategory.update({ where: { id }, data: payload as any });
-        }
+            // If name is changing, compute a unique slug and update name+slug
+            if (payload.name) {
+                const uniqueSlug = await generateUniqueSlugTx(tx, payload.name, id);
+                await tx.productCategory.update({ where: { id }, data: { name: payload.name, slug: uniqueSlug } });
+            } else {
+                await tx.productCategory.update({ where: { id }, data: payload as any });
+            }
 
         return tx.productCategory.findUnique({ where: { id } });
     });
