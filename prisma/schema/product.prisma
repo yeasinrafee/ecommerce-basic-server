@@ -1,6 +1,7 @@
 enum DiscountType {
   PERCENTAGE_DISCOUNT
   FLAT_DISCOUNT
+  NONE
 }
 
 enum StockStatus {
