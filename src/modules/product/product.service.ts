@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma.js';
 import toSlug from '../../common/utils/slug.js';
+import { toUpperUnderscore } from '../../common/utils/format.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { Prisma } from '@prisma/client';
 import type { CreateProductDto } from './product.types.js';
@@ -71,18 +72,31 @@ const createProduct = async (payload: CreateProductDto) => {
 
 		const attributeNames = Array.from(new Set(payload.attributes.map((attribute) => attribute.name.trim()).filter(Boolean)));
 		const attributeRecords = attributeNames.length > 0
-			? await tx.attribute.findMany({ where: { name: { in: attributeNames } }, select: { id: true, name: true } })
+			? await tx.attribute.findMany({
+				where: {
+					OR: attributeNames.map((name) => ({
+						name: { equals: name, mode: 'insensitive' }
+					}))
+				},
+				select: { id: true, name: true }
+			})
 			: [];
 
-		if (attributeRecords.length !== attributeNames.length) {
-			const attributeNameSet = new Set(attributeRecords.map((attribute) => attribute.name));
-			const missingAttribute = attributeNames.find((name) => !attributeNameSet.has(name));
-			throw new AppError(400, 'Invalid attributes', [
-				{ message: `Attribute ${missingAttribute ?? ''} was not found`, code: 'ATTRIBUTE_NOT_FOUND' }
-			]);
+		const normalizedAttributeMap = new Map(attributeRecords.map((attribute) => [
+			toUpperUnderscore(attribute.name),
+			{ id: attribute.id, name: attribute.name }
+		]));
+
+		for (const name of attributeNames) {
+			const normalizedName = toUpperUnderscore(name);
+			if (!normalizedAttributeMap.has(normalizedName)) {
+				const slug = toSlug(name);
+				const createdAttribute = await tx.attribute.create({ data: { name, slug, values: [] } });
+				normalizedAttributeMap.set(normalizedName, { id: createdAttribute.id, name: createdAttribute.name });
+			}
 		}
 
-		const attributeMap = new Map(attributeRecords.map((attribute) => [attribute.name, attribute.id]));
+		const attributeMap = new Map(Array.from(normalizedAttributeMap.entries()).map(([key, value]) => [key, value.id]));
 		const slug = await generateUniqueSlugTx(tx, payload.name);
 		const volume = payload.length != null && payload.width != null && payload.height != null
 			? payload.length * payload.width * payload.height
@@ -140,7 +154,8 @@ const createProduct = async (payload: CreateProductDto) => {
 
 		if (payload.attributes.length > 0) {
 			const variations = payload.attributes.flatMap((attribute) => {
-				const attributeId = attributeMap.get(attribute.name) as string;
+				const normalizedName = toUpperUnderscore(attribute.name);
+				const attributeId = attributeMap.get(normalizedName) as string;
 				return attribute.pairs.map((pair) => ({
 					productId: created.id,
 					attributeId,
