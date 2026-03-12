@@ -1,6 +1,7 @@
 import { prisma } from '../../src/config/prisma.js';
 
-const NUM = 20;
+// Seed size: create at least 10 items per collection by default
+const NUM = 10;
 
 const slugify = (s: string) =>
   s
@@ -36,6 +37,24 @@ async function main() {
     });
   }
   console.log(`Seeded ${NUM} product categories`);
+
+  // Create some sub-categories for the first few parents (2 subcategories each)
+  const SUB_PARENTS = Math.min(5, NUM);
+  const SUB_PER_PARENT = 2;
+  for (let p = 1; p <= SUB_PARENTS; p++) {
+    const parentName = `Product Category ${p}`;
+    const parentSlug = slugify(parentName);
+    for (let s = 1; s <= SUB_PER_PARENT; s++) {
+      const name = `Product Category ${p} Sub ${s}`;
+      const slug = slugify(name);
+      await prisma.productCategory.upsert({
+        where: { slug },
+        update: {},
+        create: { name, slug, image: null, parent: { connect: { slug: parentSlug } } }
+      });
+    }
+  }
+  console.log(`Seeded ${SUB_PARENTS * SUB_PER_PARENT} product subcategories`);
 
   // Blog categories
   for (let i = 1; i <= NUM; i++) {
