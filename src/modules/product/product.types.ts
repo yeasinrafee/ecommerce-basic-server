@@ -78,9 +78,7 @@ export type UpdateProductDto = {
 	width?: number | null;
 	height?: number | null;
 	brandId: string;
-	/** Resolved final main image URL (controller handles upload/cleanup) */
 	image: string;
-	/** Resolved final gallery URLs (controller handles upload/cleanup) */
 	galleryImages: string[];
 	status: Status;
 	stockStatus: StockStatus;
@@ -89,4 +87,9 @@ export type UpdateProductDto = {
 	attributes: UpdateProductAttributeDto[];
 	additionalInformations: CreateProductAdditionalInfoDto[];
 	seo?: CreateProductSeoDto | null;
+};
+
+export type PatchProductDto = {
+	status?: Status;
+	stockStatus?: StockStatus;
 };

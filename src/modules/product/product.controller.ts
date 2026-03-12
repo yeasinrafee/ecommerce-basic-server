@@ -598,11 +598,29 @@ const updateProduct = async (req: Request, res: Response) => {
 	}
 };
 
+// ─── Patch (partial quick-update) ────────────────────────────────────────────
+
+const patchProductBodySchema = z.object({
+	status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+	stockStatus: z.enum(['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK']).optional()
+}).refine(
+	(data) => data.status !== undefined || data.stockStatus !== undefined,
+	{ message: 'At least one field (status or stockStatus) must be provided' }
+);
+
+const patchProduct = async (req: Request, res: Response) => {
+	const id = String(req.params.id);
+	const parsed = patchProductBodySchema.parse(req.body);
+	const updated = await productService.patchProduct(id, parsed);
+	sendResponse({ res, statusCode: 200, success: true, message: 'Product updated', data: updated });
+};
+
 export const productController = {
  	createProduct,
 	getProducts,
 	getAllProducts,
 	getProductById,
 	deleteProduct,
-	updateProduct
+	updateProduct,
+	patchProduct
 };

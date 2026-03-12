@@ -3,7 +3,7 @@ import toSlug from '../../common/utils/slug.js';
 import { toUpperUnderscore } from '../../common/utils/format.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { Prisma } from '@prisma/client';
-import type { CreateProductDto, UpdateProductDto } from './product.types.js';
+import type { CreateProductDto, UpdateProductDto, PatchProductDto } from './product.types.js';
 
 const generateUniqueSlugTx = async (tx: Prisma.TransactionClient, name: string) => {
 	const base = toSlug(name);
@@ -464,11 +464,37 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 	});
 };
 
+const patchProduct = async (id: string, payload: PatchProductDto) => {
+	const existing = await prisma.product.findUnique({ where: { id }, select: { id: true } });
+	if (!existing) {
+		throw new AppError(404, 'Product not found', [
+			{ message: 'No product found with the provided id', code: 'PRODUCT_NOT_FOUND' }
+		]);
+	}
+
+	return prisma.product.update({
+		where: { id },
+		data: {
+			...(payload.status !== undefined && { status: payload.status }),
+			...(payload.stockStatus !== undefined && { stockStatus: payload.stockStatus })
+		},
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { include: { attribute: true } }
+		}
+	});
+};
+
 export const productService = {
  	createProduct,
 	getProducts,
 	getAllProducts,
 	getProductById,
 	deleteProduct,
-	updateProduct
+	updateProduct,
+	patchProduct
 };
