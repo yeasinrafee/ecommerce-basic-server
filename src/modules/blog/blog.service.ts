@@ -86,6 +86,11 @@ const createBlog = async ({ title, image, authorName, shortDescription, content,
     if (!userId) {
         throw new AppError(401, 'Unauthorized', [{ message: 'Missing user id', code: 'UNAUTHORIZED' }]);
     }
+    // ensure title uniqueness (case-insensitive)
+    const existingTitle = await prisma.blog.findFirst({ where: { title: { equals: title, mode: 'insensitive' } } });
+    if (existingTitle) {
+        throw new AppError(409, 'Blog title already exists', [{ message: 'A blog with this title already exists', code: 'DUPLICATE_TITLE' }]);
+    }
     // generate a unique slug from title
     const baseSlug = slugifyTitle(title);
     const slug = await generateUniqueSlug(baseSlug);
@@ -123,9 +128,14 @@ const updateBlog = async (id: string, payload: UpdateBlogDto, newUploadedPublicI
     const updated = await prisma.$transaction(async (tx) => {
         const data: any = {};
 
-        if (payload.title) data.title = payload.title;
-        // if title changed, regenerate slug (ensure uniqueness excluding current blog)
         if (payload.title) {
+            // ensure no other blog (excluding current) has this title
+            const dup = await tx.blog.findFirst({ where: { title: { equals: payload.title, mode: 'insensitive' }, id: { not: id } } });
+            if (dup) {
+                throw new AppError(409, 'Blog title already exists', [{ message: 'A blog with this title already exists', code: 'DUPLICATE_TITLE' }]);
+            }
+            data.title = payload.title;
+            // regenerate slug (ensure uniqueness excluding current blog)
             const baseSlug = slugifyTitle(payload.title);
             const unique = await generateUniqueSlug(baseSlug, id, tx);
             data.slug = unique;
