@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:superadmin": "tsx prisma/seed/superadmin.ts"
+    "prisma:superadmin": "tsx prisma/seed/superadmin.ts",
+    "prisma:seed-all": "tsx prisma/seed/seed-all.ts"
   },
   "keywords": [],
   "author": "",

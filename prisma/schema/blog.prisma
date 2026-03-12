@@ -1,21 +1,22 @@
 model Blog {
-    id               String        @id @default(uuid())
-    title            String
+    id               String  @id @default(uuid())
+    title            String  @unique
     userId           String
-    user             User          @relation(fields: [userId], references: [id])
+    user             User    @relation(fields: [userId], references: [id])
     image            String?
     authorName       String
     shortDescription String
     content          String
-   
-    comments         Comment[]
-    createdAt        DateTime      @default(now())
-    updatedAt        DateTime      @updatedAt
+    slug             String  @unique
 
-    seos Seo[]
-    tags TagsOnBlogs[]
+    comments  Comment[]
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    seos       Seo[]
+    tags       TagsOnBlogs[]
     categoryId String?
-    category BlogCategory? @relation(fields: [categoryId], references: [id])
+    category   BlogCategory? @relation(fields: [categoryId], references: [id])
 }
 
 model Comment {

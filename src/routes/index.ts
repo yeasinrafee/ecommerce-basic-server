@@ -1,5 +1,5 @@
 import { Router } from 'express';
-// import { productRoutes } from '../modules/product/product.route.js';
+import { productRoutes } from '../modules/product/product.route.js';
 import { authRoutes } from '../modules/auth/auth.route.js';
 import { productCategoryRoutes } from '../modules/category/product-category.route.js';
 import { blogCategoryRoutes } from '../modules/category/blog-category.route.js';
@@ -16,7 +16,7 @@ import { zonePolicyRoutes } from '../modules/zone-policy/zone-policy.route.js';
 
 const router = Router();
 
-// router.use('/products', productRoutes);
+router.use('/products', productRoutes);
 router.use('/auth', authRoutes);
 router.use('/product-categories', productCategoryRoutes);
 router.use('/blog-categories', blogCategoryRoutes);

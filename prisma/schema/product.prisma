@@ -1,6 +1,7 @@
 enum DiscountType {
   PERCENTAGE_DISCOUNT
   FLAT_DISCOUNT
+  NONE
 }
 
 enum StockStatus {
@@ -77,5 +78,5 @@ model ProductVariation {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  @@unique([productId, attributeId])
+  @@unique([productId, attributeId, attributeValue])
 }
