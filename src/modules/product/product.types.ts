@@ -93,3 +93,9 @@ export type PatchProductDto = {
 	status?: Status;
 	stockStatus?: StockStatus;
 };
+
+export type BulkPatchProductDto = {
+	ids: string[];
+	status?: Status;
+	stockStatus?: StockStatus;
+};

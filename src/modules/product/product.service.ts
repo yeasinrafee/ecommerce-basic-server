@@ -3,7 +3,7 @@ import toSlug from '../../common/utils/slug.js';
 import { toUpperUnderscore } from '../../common/utils/format.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { Prisma } from '@prisma/client';
-import type { CreateProductDto, UpdateProductDto, PatchProductDto } from './product.types.js';
+import type { CreateProductDto, UpdateProductDto, PatchProductDto, BulkPatchProductDto } from './product.types.js';
 
 const generateUniqueSlugTx = async (tx: Prisma.TransactionClient, name: string) => {
 	const base = toSlug(name);
@@ -273,7 +273,6 @@ const deleteProduct = async (id: string) => {
 
 const updateProduct = async (id: string, payload: UpdateProductDto) => {
 	return prisma.$transaction(async (tx) => {
-		// 1. Verify the product exists
 		const existing = await tx.product.findUnique({
 			where: { id },
 			select: { id: true, name: true, slug: true }
@@ -284,7 +283,6 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 			]);
 		}
 
-		// 2. Validate brand
 		const brand = await tx.brand.findUnique({ where: { id: payload.brandId }, select: { id: true } });
 		if (!brand) {
 			throw new AppError(400, 'Brand not found', [
@@ -292,7 +290,6 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 			]);
 		}
 
-		// 3. Validate SKU uniqueness, excluding this product
 		if (payload.sku) {
 			const existingSku = await tx.product.findFirst({
 				where: { sku: payload.sku, id: { not: id } },
@@ -305,7 +302,6 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 			}
 		}
 
-		// 4. Validate categories and tags
 		const categoryIds = Array.from(new Set(payload.categoryIds));
 		const tagIds = Array.from(new Set(payload.tagIds));
 
@@ -326,7 +322,6 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 			]);
 		}
 
-		// 5. Resolve / create attribute records
 		const attributeNames = Array.from(new Set(payload.attributes.map((a) => a.name.trim()).filter(Boolean)));
 		const attributeRecords = attributeNames.length > 0
 			? await tx.attribute.findMany({
@@ -350,19 +345,16 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 
 		const attributeMap = new Map(Array.from(normalizedAttributeMap.entries()).map(([k, v]) => [k, v.id]));
 
-		// 6. Regenerate slug only if the name changed
 		let slug = existing.slug;
 		if (payload.name.trim().toLowerCase() !== existing.name.trim().toLowerCase()) {
 			slug = await generateUniqueSlugTx(tx, payload.name);
 		}
 
-		// 7. Compute derived fields
 		const volume = payload.length != null && payload.width != null && payload.height != null
 			? payload.length * payload.width * payload.height
 			: null;
 		const finalPrice = calculateFinalPrice(payload.basePrice, payload.discountType, payload.discountValue);
 
-		// 8. Update the product record
 		await tx.product.update({
 			where: { id },
 			data: {
@@ -391,7 +383,6 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 			}
 		});
 
-		// 9. Replace all relations atomically
 		await Promise.all([
 			tx.categoriesOnProducts.deleteMany({ where: { productId: id } }),
 			tx.tagsOnProducts.deleteMany({ where: { productId: id } }),
@@ -489,6 +480,17 @@ const patchProduct = async (id: string, payload: PatchProductDto) => {
 	});
 };
 
+const bulkPatchProducts = async (payload: BulkPatchProductDto) => {
+	const result = await prisma.product.updateMany({
+		where: { id: { in: payload.ids } },
+		data: {
+			...(payload.status !== undefined && { status: payload.status }),
+			...(payload.stockStatus !== undefined && { stockStatus: payload.stockStatus })
+		}
+	});
+	return result;
+};
+
 export const productService = {
  	createProduct,
 	getProducts,
@@ -496,5 +498,6 @@ export const productService = {
 	getProductById,
 	deleteProduct,
 	updateProduct,
-	patchProduct
+	patchProduct,
+	bulkPatchProducts
 };

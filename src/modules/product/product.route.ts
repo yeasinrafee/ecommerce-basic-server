@@ -25,6 +25,7 @@ router.patch(
 	asyncHandler(productController.updateProduct)
 );
 
+router.patch('/bulk/fields', asyncHandler(productController.bulkPatchProducts));
 router.patch('/:id/fields', asyncHandler(productController.patchProduct));
 
 router.get('/', asyncHandler(productController.getProducts));

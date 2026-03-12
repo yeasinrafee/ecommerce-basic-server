@@ -598,6 +598,23 @@ const updateProduct = async (req: Request, res: Response) => {
 	}
 };
 
+// ─── Bulk Patch (partial quick-update for multiple products) ─────────────────
+
+const bulkPatchProductsBodySchema = z.object({
+	ids: z.array(z.string().trim().min(1)).min(1, 'At least one product id is required'),
+	status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+	stockStatus: z.enum(['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK']).optional()
+}).refine(
+	(data) => data.status !== undefined || data.stockStatus !== undefined,
+	{ message: 'At least one field (status or stockStatus) must be provided' }
+);
+
+const bulkPatchProducts = async (req: Request, res: Response) => {
+	const parsed = bulkPatchProductsBodySchema.parse(req.body);
+	const result = await productService.bulkPatchProducts(parsed);
+	sendResponse({ res, statusCode: 200, success: true, message: `${result.count} product(s) updated`, data: result });
+};
+
 // ─── Patch (partial quick-update) ────────────────────────────────────────────
 
 const patchProductBodySchema = z.object({
@@ -622,5 +639,6 @@ export const productController = {
 	getProductById,
 	deleteProduct,
 	updateProduct,
-	patchProduct
+	patchProduct,
+	bulkPatchProducts
 };
