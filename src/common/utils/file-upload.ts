@@ -89,7 +89,7 @@ const uploadBuffer = async (
 
 	if (!['image/webp', 'image/avif'].includes(file.mimetype)) {
 		try {
-			buffer = await sharp(buffer).webp({ quality: 90 }).toBuffer();
+			buffer = await sharp(buffer).rotate().webp({ quality: 90 }).toBuffer();
 			uploadOptions.format = 'webp';
 		} catch (err) {
 			throw new AppError(500, 'Image conversion failed', [
@@ -109,14 +109,6 @@ const uploadBuffer = async (
 
 	const fileNamePrefix = context.fileNamePrefix ?? 'asset';
 	const publicId = generatePublicId(`${fileNamePrefix}_${index + 1}`, context.entityId);
-
-	
-	try {
-		await ensureFolderExists(createFolderPath(context));
-	} catch (err) {
-	
-		throw err;
-	}
 
 	return new Promise((resolve, reject) => {
 		const upload = cloudinary.uploader.upload_stream(
@@ -170,8 +162,10 @@ export const uploadMultipleFilesToCloudinary = async (
 		return [];
 	}
 
-	const uploads = files.map((file, index) => uploadBuffer(file, context, index));
-	const results = await Promise.all(uploads);
+ await ensureFolderExists(createFolderPath(context));
+
+ const uploads = files.map((file, index) => uploadBuffer(file, context, index));
+ const results = await Promise.all(uploads);
 
 	return results.map((uploaded) => ({
 		publicId: uploaded.public_id,
@@ -205,7 +199,7 @@ export const getPublicIdFromUrl = (url?: string | null): string | null => {
 	if (!url) return null;
 
 	try {
-		// Strip query string
+		
 		const withoutQuery = url.split('?')[0];
 		const marker = '/upload/';
 		const idx = withoutQuery.indexOf(marker);
@@ -213,13 +207,13 @@ export const getPublicIdFromUrl = (url?: string | null): string | null => {
 
 		let rest = withoutQuery.substring(idx + marker.length);
 
-		// Remove any leading version segment e.g. v123456789/
+		
 		const vMatch = rest.match(/v\d+\//);
 		if (vMatch && vMatch.index !== undefined) {
 			rest = rest.substring(vMatch.index + vMatch[0].length);
 		}
 
-		// Remove file extension
+		
 		const lastDot = rest.lastIndexOf('.');
 		if (lastDot !== -1) {
 			rest = rest.substring(0, lastDot);
