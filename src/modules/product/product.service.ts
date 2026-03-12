@@ -207,6 +207,74 @@ const createProduct = async (payload: CreateProductDto) => {
 	});
 };
 
+const getProducts = async ({ page = 1, limit = 20 }: { page?: number; limit?: number }) => {
+	const skip = (page - 1) * limit;
+	const [data, total] = await Promise.all([
+		prisma.product.findMany({
+ 			skip,
+ 			take: limit,
+ 			orderBy: { createdAt: 'desc' },
+ 			include: {
+ 				brand: true,
+ 				categories: { include: { category: true } },
+ 				tags: { include: { tag: true } },
+ 				additionalInformations: true,
+ 				seos: true,
+ 				productVariations: { include: { attribute: true } }
+ 			}
+ 		}),
+ 		prisma.product.count()
+ 	]);
+
+	const meta = { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) };
+
+	return { data, meta };
+};
+
+const getAllProducts = async () => {
+ 	return prisma.product.findMany({
+ 		orderBy: { createdAt: 'desc' },
+ 		include: {
+ 			brand: true,
+ 			categories: { include: { category: true } },
+ 			tags: { include: { tag: true } },
+ 			additionalInformations: true,
+ 			seos: true,
+ 			productVariations: { include: { attribute: true } }
+ 		}
+ 	});
+};
+
+const getProductById = async (id: string) => {
+ 	return prisma.product.findUnique({
+ 		where: { id },
+ 		include: {
+ 			brand: true,
+ 			categories: { include: { category: true } },
+ 			tags: { include: { tag: true } },
+ 			additionalInformations: true,
+ 			seos: true,
+ 			productVariations: { include: { attribute: true } }
+ 		}
+ 	});
+};
+
+const deleteProduct = async (id: string) => {
+ 	return prisma.$transaction(async (tx) => {
+ 		await tx.productVariation.deleteMany({ where: { productId: id } });
+ 		await tx.categoriesOnProducts.deleteMany({ where: { productId: id } });
+ 		await tx.tagsOnProducts.deleteMany({ where: { productId: id } });
+ 		await tx.additionalInformation.deleteMany({ where: { productId: id } });
+ 		await tx.seo.deleteMany({ where: { productId: id } });
+ 		await tx.product.delete({ where: { id } });
+ 		return true;
+ 	});
+};
+
 export const productService = {
-	createProduct
+ 	createProduct,
+	getProducts,
+	getAllProducts,
+	getProductById,
+	deleteProduct
 };

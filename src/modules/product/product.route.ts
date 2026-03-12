@@ -16,4 +16,9 @@ router.post(
 	asyncHandler(productController.createProduct)
 );
 
+router.get('/', asyncHandler(productController.getProducts));
+router.get('/all', asyncHandler(productController.getAllProducts));
+router.get('/:id', asyncHandler(productController.getProductById));
+router.delete('/:id', asyncHandler(productController.deleteProduct));
+
 export const productRoutes = router;

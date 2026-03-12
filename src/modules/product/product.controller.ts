@@ -298,6 +298,38 @@ const createProduct = async (req: Request, res: Response) => {
 	}
 };
 
+const getProducts = async (req: Request, res: Response) => {
+	const page = Math.max(1, Number(req.query.page ?? 1));
+	const limit = Math.max(1, Number(req.query.limit ?? 20));
+	const result = await productService.getProducts({ page, limit });
+	sendResponse({ res, statusCode: 200, success: true, message: 'Products retrieved', data: result.data, meta: result.meta });
+};
+
+const getAllProducts = async (req: Request, res: Response) => {
+	const data = await productService.getAllProducts();
+	sendResponse({ res, statusCode: 200, success: true, message: 'All products retrieved', data });
+};
+
+const getProductById = async (req: Request, res: Response) => {
+	const id = String(req.params.id);
+	const product = await productService.getProductById(id);
+if (!product) {
+ 		throw new AppError(404, 'Product not found', [{ message: 'No product found with the provided id', code: 'PRODUCT_NOT_FOUND' }]);
+}
+
+	sendResponse({ res, statusCode: 200, success: true, message: 'Product retrieved', data: product });
+};
+
+const deleteProduct = async (req: Request, res: Response) => {
+	const id = String(req.params.id);
+	await productService.deleteProduct(id);
+	sendResponse({ res, statusCode: 200, success: true, message: 'Product deleted', data: null });
+};
+
 export const productController = {
-	createProduct
+ 	createProduct,
+	getProducts,
+	getAllProducts,
+	getProductById,
+	deleteProduct
 };
