@@ -78,5 +78,5 @@ model ProductVariation {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  @@unique([productId, attributeId])
+  @@unique([productId, attributeId, attributeValue])
 }

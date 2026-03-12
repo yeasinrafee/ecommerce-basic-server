@@ -69,13 +69,6 @@ const createProduct = async (payload: CreateProductDto) => {
 			]);
 		}
 
-		const duplicateAttribute = payload.attributes.find((attribute) => attribute.pairs.length > 1);
-		if (duplicateAttribute) {
-			throw new AppError(400, 'Invalid attributes', [
-				{ message: `Only one value is supported for attribute ${duplicateAttribute.name}`, code: 'ATTRIBUTE_VALUE_LIMIT' }
-			]);
-		}
-
 		const attributeNames = Array.from(new Set(payload.attributes.map((attribute) => attribute.name.trim()).filter(Boolean)));
 		const attributeRecords = attributeNames.length > 0
 			? await tx.attribute.findMany({ where: { name: { in: attributeNames } }, select: { id: true, name: true } })
@@ -146,15 +139,20 @@ const createProduct = async (payload: CreateProductDto) => {
 		}
 
 		if (payload.attributes.length > 0) {
-			await tx.productVariation.createMany({
-				data: payload.attributes.map((attribute) => ({
+			const variations = payload.attributes.flatMap((attribute) => {
+				const attributeId = attributeMap.get(attribute.name) as string;
+				return attribute.pairs.map((pair) => ({
 					productId: created.id,
-					attributeId: attributeMap.get(attribute.name) as string,
-					attributeValue: attribute.pairs[0]?.value,
-					price: attribute.pairs[0]?.price ?? 0,
-					galleryImage: attribute.galleryImage ?? null
-				}))
+					attributeId,
+					attributeValue: pair.value,
+					price: pair.price ?? 0,
+					galleryImage: pair.galleryImage ?? null
+				}));
 			});
+
+			if (variations.length > 0) {
+				await tx.productVariation.createMany({ data: variations });
+			}
 		}
 
 		if (payload.seo && (payload.seo.title.trim() || payload.seo.description || payload.seo.keyword.length > 0)) {

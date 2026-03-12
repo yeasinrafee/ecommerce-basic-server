@@ -73,10 +73,10 @@ const createProductBodySchema = z.object({
 			pairs: z.array(
 				z.object({
 					value: z.string().trim().min(1),
-					price: nullableNumberSchema
+					price: nullableNumberSchema,
+					imageId: z.string().trim().optional().nullable()
 				})
 			).min(1),
-			imageId: z.string().trim().optional().nullable()
 		})
 	),
 	additionalInfo: z.array(
@@ -188,7 +188,7 @@ const createProduct = async (req: Request, res: Response) => {
 		categories: parseJsonField(req.body.categories, [] as string[]),
 		tags: parseJsonField(req.body.tags, [] as string[]),
 		galleryImagesMeta: parseJsonField(req.body.galleryImagesMeta, [] as { id: string; name: string }[]),
-		attributes: parseJsonField(req.body.attributes, [] as { name: string; pairs: { value: string; price?: number | null }[]; imageId?: string | null }[]),
+		attributes: parseJsonField(req.body.attributes, [] as { name: string; pairs: { value: string; price?: number | null; imageId?: string | null }[] }[]),
 		additionalInfo: parseJsonField(req.body.additionalInfo, [] as { name: string; value: string }[]),
 		seo: parseJsonField(req.body.seo, null as { metaTitle: string; metaDescription: string; seoKeywords: string[] } | null)
 	});
@@ -200,10 +200,16 @@ const createProduct = async (req: Request, res: Response) => {
 	}
 
 	const galleryIdSet = new Set(parsed.galleryImagesMeta.map((item) => item.id));
-	const invalidAttributeImage = parsed.attributes.find((attribute) => attribute.imageId && !galleryIdSet.has(attribute.imageId));
+	const invalidAttributeImage = parsed.attributes.find((attribute) =>
+		attribute.pairs.some((pair) => pair.imageId && !galleryIdSet.has(pair.imageId)),
+	);
 	if (invalidAttributeImage) {
+		const invalidPair = invalidAttributeImage.pairs.find((pair) => pair.imageId && !galleryIdSet.has(pair.imageId));
 		throw new AppError(400, 'Invalid attribute image selection', [
-			{ message: `Attribute ${invalidAttributeImage.name} references a gallery image that was not uploaded`, code: 'ATTRIBUTE_IMAGE_NOT_FOUND' }
+			{
+				message: `Attribute ${invalidAttributeImage.name} value ${invalidPair?.value ?? ''} references a gallery image that was not uploaded`,
+				code: 'ATTRIBUTE_IMAGE_NOT_FOUND'
+			}
 		]);
 	}
 
@@ -263,8 +269,11 @@ const createProduct = async (req: Request, res: Response) => {
 			tagIds: parsed.tags,
 			attributes: parsed.attributes.map((attribute) => ({
 				name: attribute.name,
-				pairs: attribute.pairs.map((pair) => ({ value: pair.value, price: pair.price ?? null })),
-				galleryImage: attribute.imageId ? galleryUrlByClientId.get(attribute.imageId) ?? null : null
+				pairs: attribute.pairs.map((pair) => ({
+					value: pair.value,
+					price: pair.price ?? null,
+					galleryImage: pair.imageId ? galleryUrlByClientId.get(pair.imageId) ?? null : null
+				})),
 			})),
 			additionalInformations: parsed.additionalInfo,
 			seo: parsed.seo && (parsed.seo.metaTitle || parsed.seo.metaDescription || parsed.seo.seoKeywords.length > 0)

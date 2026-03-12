@@ -3,12 +3,12 @@ import type { DiscountType, Status, StockStatus } from '@prisma/client';
 export type CreateProductAttributePairDto = {
 	value: string;
 	price?: number | null;
+	galleryImage?: string | null;
 };
 
 export type CreateProductAttributeDto = {
 	name: string;
 	pairs: CreateProductAttributePairDto[];
-	galleryImage?: string | null;
 };
 
 export type CreateProductAdditionalInfoDto = {
