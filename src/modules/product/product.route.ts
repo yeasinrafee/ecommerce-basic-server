@@ -16,6 +16,15 @@ router.post(
 	asyncHandler(productController.createProduct)
 );
 
+router.patch(
+	'/:id',
+	upload.fields([
+		{ name: 'mainImage', maxCount: 1 },
+		{ name: 'galleryImages', maxCount: 10 }
+	]),
+	asyncHandler(productController.updateProduct)
+);
+
 router.get('/', asyncHandler(productController.getProducts));
 router.get('/all', asyncHandler(productController.getAllProducts));
 router.get('/:id', asyncHandler(productController.getProductById));

@@ -48,3 +48,45 @@ export type CreateProductDto = {
 	additionalInformations: CreateProductAdditionalInfoDto[];
 	seo?: CreateProductSeoDto | null;
 };
+
+// ─── Update DTO ───────────────────────────────────────────────────────────────
+
+export type UpdateProductAttributePairDto = {
+	value: string;
+	price?: number | null;
+	galleryImage?: string | null;
+};
+
+export type UpdateProductAttributeDto = {
+	name: string;
+	pairs: UpdateProductAttributePairDto[];
+};
+
+export type UpdateProductDto = {
+	name: string;
+	shortDescription?: string | null;
+	description: string;
+	basePrice: number;
+	discountType: DiscountType;
+	discountValue?: number | null;
+	discountStartDate?: Date | null;
+	discountEndDate?: Date | null;
+	stock: number;
+	sku?: string | null;
+	weight?: number | null;
+	length?: number | null;
+	width?: number | null;
+	height?: number | null;
+	brandId: string;
+	/** Resolved final main image URL (controller handles upload/cleanup) */
+	image: string;
+	/** Resolved final gallery URLs (controller handles upload/cleanup) */
+	galleryImages: string[];
+	status: Status;
+	stockStatus: StockStatus;
+	categoryIds: string[];
+	tagIds: string[];
+	attributes: UpdateProductAttributeDto[];
+	additionalInformations: CreateProductAdditionalInfoDto[];
+	seo?: CreateProductSeoDto | null;
+};
