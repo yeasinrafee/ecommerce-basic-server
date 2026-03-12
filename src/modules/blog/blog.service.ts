@@ -5,6 +5,46 @@ import { deleteCloudinaryAsset, getPublicIdFromUrl } from '../../common/utils/fi
 
 import type { Prisma } from '@prisma/client';
 
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const slugifyTitle = (title: string) =>
+    title
+        .toString()
+        .trim()
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/['"]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .replace(/-{2,}/g, '-');
+
+const generateUniqueSlug = async (base: string, excludeId?: string, dbClient: any = prisma) => {
+    const where: any = { slug: { startsWith: base } };
+    if (excludeId) where.AND = { id: { not: excludeId } };
+
+    const existing = await dbClient.blog.findMany({ where, select: { slug: true } });
+    const slugs = existing.map((r: any) => r.slug);
+
+    let max = -1;
+    let hasPlain = false;
+    const escapedBase = escapeRegExp(base);
+    const regex = new RegExp(`^${escapedBase}-(\\d+)$`);
+
+    for (const s of slugs) {
+        if (s === base) hasPlain = true;
+        const m = s.match(regex);
+        if (m) {
+            const n = parseInt(m[1], 10);
+            if (!Number.isNaN(n) && n > max) max = n;
+        }
+    }
+
+    if (!hasPlain && max === -1) return base;
+    const next = max === -1 ? 1 : max + 1;
+    return `${base}-${next}`;
+};
+
 const getBlogs = async ({ page = 1, limit = 10, searchTerm }: BlogListQuery = {}): Promise<ServiceListResult<any>> => {
     const skip = (page - 1) * limit;
     const where: Prisma.BlogWhereInput = searchTerm
@@ -46,21 +86,25 @@ const createBlog = async ({ title, image, authorName, shortDescription, content,
     if (!userId) {
         throw new AppError(401, 'Unauthorized', [{ message: 'Missing user id', code: 'UNAUTHORIZED' }]);
     }
+    // generate a unique slug from title
+    const baseSlug = slugifyTitle(title);
+    const slug = await generateUniqueSlug(baseSlug);
 
     const created = await prisma.blog.create({
         data: {
             title,
+            slug,
             image,
             authorName,
             shortDescription,
             content,
             user: { connect: { id: userId } },
             category: categoryId ? { connect: { id: categoryId } } : undefined,
-                        tags: Array.isArray(tagIds) && tagIds.length > 0 ? { create: tagIds.map((t) => ({ tag: { connect: { id: t } } })) } : undefined,
-                        seos:
-                            seo && (seo.title || seo.description || (Array.isArray(seo.keyword) && seo.keyword.length > 0))
-                                ? { create: { title: seo.title ?? '', description: seo.description ?? undefined, keyword: Array.isArray(seo.keyword) ? seo.keyword : [] } }
-                                : undefined
+            tags: Array.isArray(tagIds) && tagIds.length > 0 ? { create: tagIds.map((t) => ({ tag: { connect: { id: t } } })) } : undefined,
+            seos:
+                seo && (seo.title || seo.description || (Array.isArray(seo.keyword) && seo.keyword.length > 0))
+                    ? { create: { title: seo.title ?? '', description: seo.description ?? undefined, keyword: Array.isArray(seo.keyword) ? seo.keyword : [] } }
+                    : undefined
         },
         include: { category: true, tags: { include: { tag: true } }, user: true, seos: true }
     });
@@ -80,6 +124,12 @@ const updateBlog = async (id: string, payload: UpdateBlogDto, newUploadedPublicI
         const data: any = {};
 
         if (payload.title) data.title = payload.title;
+        // if title changed, regenerate slug (ensure uniqueness excluding current blog)
+        if (payload.title) {
+            const baseSlug = slugifyTitle(payload.title);
+            const unique = await generateUniqueSlug(baseSlug, id, tx);
+            data.slug = unique;
+        }
         if (payload.image !== undefined) data.image = payload.image;
         if (payload.authorName) data.authorName = payload.authorName;
         if (payload.shortDescription) data.shortDescription = payload.shortDescription;
@@ -172,7 +222,7 @@ const deleteBlog = async (id: string) => {
 };
 
 const getAllBlogs = async () => {
-    return prisma.blog.findMany({ orderBy: { createdAt: 'desc' }, include: { category: true, tags: { include: { tag: true } }, user: true } });
+    return prisma.blog.findMany({ orderBy: { createdAt: 'desc' }, include: { category: true, tags: { include: { tag: true } }, user: true, seos: true } });
 };
 
 export const blogService = {

@@ -7,6 +7,7 @@ model Blog {
     authorName       String
     shortDescription String
     content          String
+    slug            String        @unique
    
     comments         Comment[]
     createdAt        DateTime      @default(now())
