@@ -1,0 +1,115 @@
+import { prisma } from '../../config/prisma.js';
+import { AppError } from '../../common/errors/app-error.js';
+import type { WishlistQuery, UpdateWishlistDto } from './wishlist.types.js';
+
+const getCustomerWishlistId = async (userId: string) => {
+    const customer = await prisma.customer.findUnique({ where: { userId } });
+    if (!customer) throw new AppError(404, 'Customer not found', [{ message: 'No customer profile for this user', code: 'NOT_FOUND' }]);
+    
+    // As per user instructions, wishlist is created with customer, so we just fetch it
+    const wishlist = await prisma.wishlist.findUnique({ where: { customerId: customer.id } });
+    if (!wishlist) throw new AppError(404, 'Wishlist not found', [{ message: 'No wishlist for this customer', code: 'NOT_FOUND' }]);
+
+    return wishlist.id;
+}
+
+const getWishlistItemsPaginated = async (userId: string, { page = 1, limit = 10 }: WishlistQuery) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+        prisma.wishlistItem.findMany({
+            where: { wishlistId },
+            skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            include: { product: true }
+        }),
+        prisma.wishlistItem.count({ where: { wishlistId } })
+    ]);
+
+    return {
+        data,
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages: Math.max(1, Math.ceil(total / limit))
+        }
+    };
+};
+
+const getAllWishlistItems = async (userId: string) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    return prisma.wishlistItem.findMany({
+        where: { wishlistId },
+        orderBy: { createdAt: 'desc' },
+        include: { product: true }
+    });
+};
+
+const getWishlistItem = async (userId: string, productId: string) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    const item = await prisma.wishlistItem.findUnique({
+        where: { wishlistId_productId: { wishlistId, productId } },
+        include: { product: true }
+    });
+
+    if (!item) {
+        throw new AppError(404, 'Wishlist item not found', [{ message: 'Product is not in the wishlist', code: 'NOT_FOUND' }]);
+    }
+    return item;
+};
+
+const updateWishlist = async (userId: string, productIds: string | string[], addedToCart?: boolean) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    const ids = Array.isArray(productIds) ? productIds : [productIds];
+    
+    return prisma.$transaction(async (tx) => {
+        for (const productId of ids) {
+            await tx.wishlistItem.upsert({
+                where: { wishlistId_productId: { wishlistId, productId } },
+                create: { wishlistId, productId, addedToCart: addedToCart ?? false },
+                update: { addedToCart: addedToCart ?? false }
+            });
+        }
+        return tx.wishlistItem.findMany({
+            where: { wishlistId, productId: { in: ids } },
+            include: { product: true }
+        });
+    });
+};
+
+const deleteWishlistItems = async (userId: string, productIds: string | string[]) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    const ids = Array.isArray(productIds) ? productIds : [productIds];
+
+    await prisma.wishlistItem.deleteMany({
+        where: { wishlistId, productId: { in: ids } }
+    });
+    return true;
+};
+
+const addToCart = async (userId: string, productIds: string | string[]) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    const ids = Array.isArray(productIds) ? productIds : [productIds];
+
+    await prisma.wishlistItem.updateMany({
+        where: { wishlistId, productId: { in: ids } },
+        data: { addedToCart: true }
+    });
+
+    return prisma.wishlistItem.findMany({
+        where: { wishlistId, productId: { in: ids } },
+        include: { product: true }
+    });
+};
+
+export const wishlistService = {
+    getWishlistItemsPaginated,
+    getAllWishlistItems,
+    getWishlistItem,
+    updateWishlist,
+    deleteWishlistItems,
+    addToCart
+};

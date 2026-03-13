@@ -1,0 +1,150 @@
+import { prisma } from '../../config/prisma.js';
+import { AppError } from '../../common/errors/app-error.js';
+import type { CreatePromoDto, UpdatePromoDto, PromoListQuery } from './promo.types.js';
+import { toUpperUnderscore } from '../../common/utils/format.js';
+
+const getPromos = async ({ page = 1, limit = 10, searchTerm }: PromoListQuery) => {
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (searchTerm) {
+        where.code = { contains: searchTerm, mode: 'insensitive' };
+    }
+
+    const [data, total] = await Promise.all([
+        prisma.promo.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            include: { promoProducts: { include: { product: true } } }
+        }),
+        prisma.promo.count({ where })
+    ]);
+
+    return {
+        data,
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages: Math.max(1, Math.ceil(total / limit))
+        }
+    };
+};
+
+const getAllPromos = async () => {
+    return prisma.promo.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: { promoProducts: { include: { product: true } } }
+    });
+};
+
+const getPromoById = async (id: string) => {
+    return prisma.promo.findUnique({
+        where: { id },
+        include: { promoProducts: { include: { product: true } } }
+    });
+};
+
+const createPromo = async (payload: CreatePromoDto) => {
+    const code = toUpperUnderscore(payload.code);
+
+    const existing = await prisma.promo.findUnique({ where: { code } });
+    if (existing) {
+        throw new AppError(400, 'Promo code already exists', [{ message: 'Code must be unique', code: 'UNIQUE_CONSTRAINT' }]);
+    }
+
+    return prisma.$transaction(async (tx) => {
+        const promo = await tx.promo.create({
+            data: {
+                code,
+                discountType: payload.discountType,
+                discountValue: Number(payload.discountValue),
+                numberOfUses: Number(payload.numberOfUses),
+                startDate: new Date(payload.startDate),
+                endDate: new Date(payload.endDate)
+            }
+        });
+
+        if (payload.productIds && payload.productIds.length > 0) {
+            const productData = payload.productIds.map(productId => ({
+                promoId: promo.id,
+                productId
+            }));
+            await tx.promoProduct.createMany({ data: productData, skipDuplicates: true });
+        }
+
+        return tx.promo.findUnique({
+            where: { id: promo.id },
+            include: { promoProducts: { include: { product: true } } }
+        });
+    });
+};
+
+const updatePromo = async (id: string, payload: UpdatePromoDto) => {
+    const existingPromo = await prisma.promo.findUnique({ where: { id } });
+    if (!existingPromo) {
+        throw new AppError(404, 'Promo not found', [{ message: 'No promo corresponds to this ID', code: 'NOT_FOUND' }]);
+    }
+
+    let parsedCode = existingPromo.code;
+    if (payload.code) {
+        parsedCode = toUpperUnderscore(payload.code);
+        if (parsedCode !== existingPromo.code) {
+            const conflicting = await prisma.promo.findUnique({ where: { code: parsedCode } });
+            if (conflicting) {
+                throw new AppError(400, 'Promo code already exists', [{ message: 'Code must be unique', code: 'UNIQUE_CONSTRAINT' }]);
+            }
+        }
+    }
+
+    return prisma.$transaction(async (tx) => {
+        const updateData: any = {};
+        if (payload.code) updateData.code = parsedCode;
+        if (payload.discountType) updateData.discountType = payload.discountType;
+        if (payload.discountValue !== undefined) updateData.discountValue = Number(payload.discountValue);
+        if (payload.numberOfUses !== undefined) updateData.numberOfUses = Number(payload.numberOfUses);
+        if (payload.startDate) updateData.startDate = new Date(payload.startDate);
+        if (payload.endDate) updateData.endDate = new Date(payload.endDate);
+
+        const promo = await tx.promo.update({
+            where: { id },
+            data: updateData
+        });
+
+        if (payload.productIds !== undefined) {
+            await tx.promoProduct.deleteMany({ where: { promoId: id } });
+            
+            if (payload.productIds.length > 0) {
+                const productData = payload.productIds.map(productId => ({
+                    promoId: promo.id,
+                    productId
+                }));
+                await tx.promoProduct.createMany({ data: productData, skipDuplicates: true });
+            }
+        }
+
+        return tx.promo.findUnique({
+            where: { id },
+            include: { promoProducts: { include: { product: true } } }
+        });
+    });
+};
+
+const deletePromo = async (id: string) => {
+    return prisma.$transaction(async (tx) => {
+        await tx.promoProduct.deleteMany({ where: { promoId: id } });
+        await tx.promo.delete({ where: { id } });
+        return true;
+    });
+};
+
+export const promoService = {
+    getPromos,
+    getAllPromos,
+    getPromoById,
+    createPromo,
+    updatePromo,
+    deletePromo
+};

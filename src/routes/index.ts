@@ -14,6 +14,8 @@ import { shippingRoutes } from '../modules/shipping/shipping.route.js';
 import { zoneRoutes } from '../modules/zone/zone.route.js';
 import { zonePolicyRoutes } from '../modules/zone-policy/zone-policy.route.js';
 import { webRoutes } from '../modules/web/web.route.js';
+import { promoRoutes } from '../modules/promo/promo.route.js';
+import { wishlistRoutes } from '../modules/wishlist/wishlist.route.js';
 
 const router = Router();
 
@@ -32,5 +34,7 @@ router.use('/zones', zoneRoutes);
 router.use('/zone-policies', zonePolicyRoutes);
 router.use('/admins', adminRoutes);
 router.use('/web', webRoutes);
+router.use('/promos', promoRoutes);
+router.use('/wishlists', wishlistRoutes);
 
 export const apiRoutes = router;
