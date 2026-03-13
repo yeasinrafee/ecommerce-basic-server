@@ -1,9 +1,25 @@
 model Customer {
-	id        String   @id @default(uuid())
-	user      User     @relation(fields: [userId], references: [id])
-	userId    String   @unique
-	phone     String
-	createdAt DateTime @default(now())
-	updatedAt DateTime @updatedAt
+    id        String   @id @default(uuid())
+    user      User     @relation(fields: [userId], references: [id])
+    userId    String   @unique
+    phone     String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    wishlists Wishlist[]
+
+    addresses Address[]
 }
 
+model Address {
+    id            String   @id @default(uuid())
+    customer      Customer @relation(fields: [customerId], references: [id])
+    customerId    String
+    zone          Zone     @relation(fields: [zoneId], references: [id])
+    zoneId        String
+    postCode      String
+    flatNumber    String?
+    streetAddress String
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+}

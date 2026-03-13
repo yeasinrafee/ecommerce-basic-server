@@ -1,14 +1,4 @@
-enum DiscountType {
-  PERCENTAGE_DISCOUNT
-  FLAT_DISCOUNT
-  NONE
-}
 
-enum StockStatus {
-  IN_STOCK
-  LOW_STOCK
-  OUT_OF_STOCK
-}
 
 model Product {
   id                String        @id @default(cuid())
@@ -43,6 +33,10 @@ model Product {
   additionalInformations AdditionalInformation[]
   seos Seo[]
   productVariations ProductVariation[]
+
+  wishlistItems WishlistItem[]
+
+  promoProducts PromoProduct[]
 }
 
 model Brand {
