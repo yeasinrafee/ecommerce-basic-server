@@ -1,13 +1,4 @@
-enum Role {
-  ADMIN
-  SUPER_ADMIN
-  CUSTOMER
-}
 
-enum Status {
-  ACTIVE
-  INACTIVE
-}
 
 model User {
   id        String   @id @default(uuid())

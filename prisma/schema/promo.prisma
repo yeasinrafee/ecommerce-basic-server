@@ -1,0 +1,27 @@
+
+model Promo {
+	id            String       @id @default(uuid())
+	code          String       @unique
+	discountType  DiscountType
+	discountValue Float
+	numberOfUses  Int
+	startDate     DateTime
+	endDate       DateTime
+	createdAt     DateTime     @default(now())
+	updatedAt     DateTime     @updatedAt
+
+	promoProducts PromoProduct[]
+}
+
+model PromoProduct {
+	id         String  @id @default(uuid())
+	promo      Promo   @relation(fields: [promoId], references: [id])
+	promoId    String
+	product    Product @relation(fields: [productId], references: [id])
+	productId  String
+	createdAt  DateTime @default(now())
+	updatedAt  DateTime @updatedAt
+
+	@@unique([promoId, productId])
+}
+
