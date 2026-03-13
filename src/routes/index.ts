@@ -13,6 +13,7 @@ import { adminRoutes } from '../modules/admin/admin.route.js';
 import { shippingRoutes } from '../modules/shipping/shipping.route.js';
 import { zoneRoutes } from '../modules/zone/zone.route.js';
 import { zonePolicyRoutes } from '../modules/zone-policy/zone-policy.route.js';
+import { webRoutes } from '../modules/web/web.route.js';
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/shipping', shippingRoutes);
 router.use('/zones', zoneRoutes);
 router.use('/zone-policies', zonePolicyRoutes);
 router.use('/admins', adminRoutes);
+router.use('/web', webRoutes);
 
 export const apiRoutes = router;
