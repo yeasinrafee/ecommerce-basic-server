@@ -31,7 +31,7 @@ model OTP {
   id         String   @id @default(uuid())
   user       User     @relation(fields: [userId], references: [id])
   userId     String
-  code       String   @unique
+  code       String
   expiryDate DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

@@ -62,6 +62,16 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const validateLoginPayload = (payload: unknown): LoginInput =>
 	parsePayload(loginSchema, payload);
 
+export const verifyOtpSchema = z.object({
+	userId: z.string().uuid('Invalid user id'),
+	code: z.string().trim().min(4, 'OTP is required').max(10, 'OTP is too long')
+});
+
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+
+export const validateVerifyOtpPayload = (payload: unknown): VerifyOtpInput =>
+	parsePayload(verifyOtpSchema, payload);
+
 export type AdminUserShape = {
 	id: string;
 	email: string;

@@ -11,11 +11,13 @@ import {
   deleteCloudinaryAsset,
   uploadMultipleFilesToCloudinary,
 } from "../../common/utils/file-upload.js";
+import { otpService } from "../../common/services/otp.service.js";
 import {
   CreateAdminInput,
   CreateAdminResult,
   LoginInput,
   AuthResult,
+  VerifyOtpInput,
 } from "./auth.types.js";
 
 const createAdmin = async (
@@ -56,7 +58,7 @@ const createAdmin = async (
   }
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    const creationResult = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           id: generatedUserId,
@@ -74,17 +76,32 @@ const createAdmin = async (
         },
       });
 
-      return {
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          name: admin.name,
-          image: admin.image,
-          status: admin.status,
-        },
-      };
+      return { user, admin };
     });
+
+    try {
+      await otpService.generate({
+        userId: creationResult.user.id,
+        to: creationResult.user.email,
+      });
+    } catch (otpErr) {
+      await prisma.$transaction(async (tx) => {
+        await tx.admin.delete({ where: { id: creationResult.admin.id } });
+        await tx.user.delete({ where: { id: creationResult.user.id } });
+      });
+      throw otpErr;
+    }
+
+    return {
+      user: {
+        id: creationResult.user.id,
+        email: creationResult.user.email,
+        role: creationResult.user.role,
+        name: creationResult.admin.name,
+        image: creationResult.admin.image,
+        status: creationResult.admin.status,
+      },
+    };
   } catch (err) {
     if (uploadedImagePublicId) {
       try {
@@ -199,8 +216,22 @@ const refreshTokens = async (refreshToken: string) => {
   });
 };
 
+const verifyOtp = async (payload: VerifyOtpInput): Promise<void> => {
+  await otpService.verify({
+    userId: payload.userId,
+    code: payload.code,
+    onVerified: async (tx) => {
+      await tx.user.update({
+        where: { id: payload.userId },
+        data: { verified: true },
+      });
+    },
+  });
+};
+
 export const authService = {
   createAdmin,
   login,
   refreshTokens,
+  verifyOtp,
 };
