@@ -254,7 +254,34 @@ const getProductById = async (id: string) => {
  			tags: { include: { tag: true } },
  			additionalInformations: true,
  			seos: true,
- 			productVariations: { include: { attribute: true } }
+ 			productVariations: { include: { attribute: true } },
+			productReviews: {
+				where: { parentId: null },
+				include: {
+					user: {
+						select: {
+							id: true,
+							email: true,
+							customers: { select: { phone: true } },
+							admins: { select: { name: true, image: true } }
+						}
+					},
+					replies: {
+						include: {
+							user: {
+								select: {
+									id: true,
+									email: true,
+									customers: { select: { phone: true } },
+									admins: { select: { name: true, image: true } }
+								}
+							}
+						},
+						orderBy: { createdAt: 'asc' }
+					}
+				},
+				orderBy: { createdAt: 'desc' }
+			}
  		}
  	});
 };
