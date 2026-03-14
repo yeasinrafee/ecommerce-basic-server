@@ -26,7 +26,7 @@ const createComment = async (req: Request, res: Response) => {
 
 const updateComment = async (req: Request, res: Response) => {
 	const userId = req.user!.id;
-	const commentId = req.params.commentId;
+	const commentId = String(req.params.commentId);
 	const payload = validateUpdateCommentPayload(req.body);
 	const comment = await reviewService.updateComment(userId, commentId, payload);
 
@@ -43,7 +43,7 @@ const updateComment = async (req: Request, res: Response) => {
 
 const deleteComment = async (req: Request, res: Response) => {
 	const userId = req.user!.id;
-	const commentId = req.params.commentId;
+	const commentId = String(req.params.commentId);
 	await reviewService.deleteComment(userId, commentId);
 
 	sendResponse({
@@ -58,7 +58,7 @@ const deleteComment = async (req: Request, res: Response) => {
 };
 
 const getBlogComments = async (req: Request, res: Response) => {
-	const blogId = req.params.blogId;
+	const blogId = String(req.params.blogId);
 	const comments = await reviewService.getBlogComments(blogId);
 
 	sendResponse({
@@ -90,7 +90,7 @@ const createProductReview = async (req: Request, res: Response) => {
 
 const updateProductReview = async (req: Request, res: Response) => {
 	const userId = req.user!.id;
-	const reviewId = req.params.reviewId;
+	const reviewId = String(req.params.reviewId);
 	const payload = validateUpdateProductReviewPayload(req.body);
 	const review = await reviewService.updateProductReview(userId, reviewId, payload);
 
@@ -107,7 +107,7 @@ const updateProductReview = async (req: Request, res: Response) => {
 
 const deleteProductReview = async (req: Request, res: Response) => {
 	const userId = req.user!.id;
-	const reviewId = req.params.reviewId;
+	const reviewId = String(req.params.reviewId);
 	await reviewService.deleteProductReview(userId, reviewId);
 
 	sendResponse({
@@ -122,7 +122,7 @@ const deleteProductReview = async (req: Request, res: Response) => {
 };
 
 const getProductReviews = async (req: Request, res: Response) => {
-	const productId = req.params.productId;
+	const productId = String(req.params.productId);
 	const reviews = await reviewService.getProductReviews(productId);
 
 	sendResponse({

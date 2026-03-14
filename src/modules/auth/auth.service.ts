@@ -65,7 +65,7 @@ const registerCustomer = async (
         id: generatedUserId,
         email: payload.email,
         password: hashedPassword,
-        role: Role.USER,
+        role: Role.CUSTOMER,
         verified: false,
       },
     });
@@ -331,43 +331,49 @@ const refreshTokens = async (refreshToken: string) => {
 };
 
 const verifyOtp = async (payload: VerifyOtpInput): Promise<AuthResult> => {
-  const result = await otpService.verify({
+  await otpService.verify({
     userId: payload.userId,
     code: payload.code,
     onVerified: async (tx) => {
-      const user = await tx.user.update({
+      await tx.user.update({
         where: { id: payload.userId },
         data: { verified: true },
       });
-
-      const admin = await tx.admin.findUnique({ where: { userId: user.id } });
-      const customer = await tx.customer.findUnique({ where: { userId: user.id } });
-
-      const name = admin?.name || user.email.split("@")[0];
-
-      const tokens = generateAuthTokens({
-        id: user.id,
-        email: user.email,
-        name: name,
-        role: user.role,
-      });
-
-      return {
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          name: name,
-          phone: customer?.phone || null,
-          image: admin?.image || null,
-          status: admin?.status || "ACTIVE",
-        },
-        tokens,
-      };
     },
   });
 
-  return result as AuthResult;
+  const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+
+  if (!user) {
+    throw new AppError(404, 'User not found', [
+      { message: 'No user corresponds to the provided id', code: 'USER_NOT_FOUND' },
+    ]);
+  }
+
+  const admin = await prisma.admin.findUnique({ where: { userId: user.id } });
+  const customer = await prisma.customer.findUnique({ where: { userId: user.id } });
+
+  const name = admin?.name || user.email.split('@')[0];
+
+  const tokens = generateAuthTokens({
+    id: user.id,
+    email: user.email,
+    name,
+    role: user.role,
+  });
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name,
+      phone: customer?.phone || null,
+      image: admin?.image || null,
+      status: admin?.status || 'ACTIVE',
+    },
+    tokens,
+  };
 };
 
 const sendOtp = async (payload: SendOtpInput): Promise<Date> => {

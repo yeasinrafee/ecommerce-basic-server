@@ -4,7 +4,7 @@ This module handles **Blog Comments** and **Product Reviews**.
 
 ## General Rules
 - **Public APIs:** All `GET` requests are public.
-- **Protected APIs:** `POST`, `PATCH`, and `DELETE` requests require authentication and are restricted to users with the **Customer** (`Role.USER`) role.
+- **Protected APIs:** `POST`, `PATCH`, and `DELETE` requests require authentication and are restricted to users with the **Customer** (`Role.CUSTOMER`) role.
 - **Replies:** If a `parentId` is provided, the entry is treated as a reply. Replies to product reviews do not require a `rating`.
 - **Product Ratings:** Adding, updating, or deleting a top-level product review automatically recalculates the product's `avgRating`, `totalRatings`, and `totalReviews`.
 
