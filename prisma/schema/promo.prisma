@@ -11,6 +11,8 @@ model Promo {
 	updatedAt     DateTime     @updatedAt
 
 	promoProducts PromoProduct[]
+
+	orders Order[]
 }
 
 model PromoProduct {
