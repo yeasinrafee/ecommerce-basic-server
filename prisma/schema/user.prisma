@@ -1,10 +1,9 @@
-
-
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
   role      Role
+  verified  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -14,6 +13,7 @@ model User {
   comments Comment[]
 
   customers Customer[]
+  otps      OTP[]
 }
 
 model Admin {
@@ -22,7 +22,17 @@ model Admin {
   userId    String   @unique
   name      String
   image     String?
-  status    Status @default(ACTIVE)
+  status    Status   @default(ACTIVE)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model OTP {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  code       String   @unique
+  expiryDate DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
