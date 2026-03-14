@@ -147,6 +147,16 @@ const login = async (payload: LoginInput): Promise<AuthResult> => {
     ]);
   }
 
+  if (!user.verified) {
+    throw new AppError(403, "User is not verified yet", [
+      {
+        field: "verified",
+        message: "Verify your account before logging in",
+        code: "USER_NOT_VERIFIED",
+      },
+    ]);
+  }
+
   const admin = await prisma.admin.findUnique({
     where: {
       userId: user.id,

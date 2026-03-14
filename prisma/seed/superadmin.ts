@@ -1,10 +1,9 @@
-import bcrypt from 'bcryptjs';
-import { prisma } from '../../src/config/prisma.js';
+import bcrypt from "bcryptjs";
+import { prisma } from "../../src/config/prisma.js";
 
-
-const EMAIL = process.env.SUPERADMIN_EMAIL || 'superadmin@example.com';
-const PASSWORD = process.env.SUPERADMIN_PASSWORD || '12345678';
-const NAME = process.env.SUPERADMIN_NAME || 'Super Admin';
+const EMAIL = process.env.SUPERADMIN_EMAIL || "superadmin@example.com";
+const PASSWORD = process.env.SUPERADMIN_PASSWORD || "12345678";
+const NAME = process.env.SUPERADMIN_NAME || "Super Admin";
 
 async function main() {
   const existing = await prisma.user.findUnique({ where: { email: EMAIL } });
@@ -18,16 +17,17 @@ async function main() {
     data: {
       email: EMAIL,
       password: hashed,
-      role: 'SUPER_ADMIN'
-    }
+      role: "SUPER_ADMIN",
+      verified: true,
+    },
   });
 
   await prisma.admin.create({
     data: {
       userId: user.id,
       name: NAME,
-      image: null
-    }
+      image: null,
+    },
   });
 
   console.log(`created superadmin: ${EMAIL}`);
@@ -35,7 +35,7 @@ async function main() {
 
 main()
   .catch((err) => {
-    console.error('seed error', err);
+    console.error("seed error", err);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
