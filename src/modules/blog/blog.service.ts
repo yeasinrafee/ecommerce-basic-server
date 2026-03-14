@@ -79,7 +79,42 @@ const getBlogs = async ({ page = 1, limit = 10, searchTerm }: BlogListQuery = {}
 };
 
 const getBlogById = async (id: string) => {
-    return prisma.blog.findUnique({ where: { id }, include: { category: true, tags: { include: { tag: true } }, user: true, seos: true } });
+    return prisma.blog.findUnique({ 
+        where: { id }, 
+        include: { 
+            category: true, 
+            tags: { include: { tag: true } }, 
+            user: true, 
+            seos: true,
+            comments: {
+				where: { parentId: null },
+				include: {
+					user: {
+						select: {
+							id: true,
+							email: true,
+							customers: { select: { phone: true } },
+							admins: { select: { name: true, image: true } }
+						}
+					},
+					replies: {
+						include: {
+							user: {
+								select: {
+									id: true,
+									email: true,
+									customers: { select: { phone: true } },
+									admins: { select: { name: true, image: true } }
+								}
+							}
+						},
+						orderBy: { createdAt: 'asc' }
+					}
+				},
+				orderBy: { createdAt: 'desc' }
+			}
+        } 
+    });
 };
 
 const createBlog = async ({ title, image, authorName, shortDescription, content, categoryId, tagIds = [], userId, seo }: CreateBlogDto) => {

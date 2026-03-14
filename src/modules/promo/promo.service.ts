@@ -1,7 +1,7 @@
 import { prisma } from '../../config/prisma.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { CreatePromoDto, UpdatePromoDto, PromoListQuery } from './promo.types.js';
-import { toUpperUnderscore } from '../../common/utils/format.js';
+import { toUpperUnderscore, fromUpperUnderscore } from '../../common/utils/format.js';
 
 const getPromos = async ({ page = 1, limit = 10, searchTerm }: PromoListQuery) => {
     const skip = (page - 1) * limit;
@@ -16,14 +16,15 @@ const getPromos = async ({ page = 1, limit = 10, searchTerm }: PromoListQuery) =
             where,
             skip,
             take: limit,
-            orderBy: { createdAt: 'desc' },
-            include: { promoProducts: { include: { product: true } } }
+            orderBy: { createdAt: 'desc' }
         }),
         prisma.promo.count({ where })
     ]);
 
+    const converted = data.map((p: any) => ({ ...p, code: fromUpperUnderscore(p.code) }));
+
     return {
-        data,
+        data: converted,
         meta: {
             page,
             limit,
@@ -34,17 +35,20 @@ const getPromos = async ({ page = 1, limit = 10, searchTerm }: PromoListQuery) =
 };
 
 const getAllPromos = async () => {
-    return prisma.promo.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: { promoProducts: { include: { product: true } } }
+    const data = await prisma.promo.findMany({
+        orderBy: { createdAt: 'desc' }
     });
+
+    return data.map((p: any) => ({ ...p, code: fromUpperUnderscore(p.code) }));
 };
 
 const getPromoById = async (id: string) => {
-    return prisma.promo.findUnique({
-        where: { id },
-        include: { promoProducts: { include: { product: true } } }
+    const promo = await prisma.promo.findUnique({
+        where: { id }
     });
+
+    if (!promo) return promo;
+    return { ...promo, code: fromUpperUnderscore(promo.code) };
 };
 
 const createPromo = async (payload: CreatePromoDto) => {
@@ -67,17 +71,8 @@ const createPromo = async (payload: CreatePromoDto) => {
             }
         });
 
-        if (payload.productIds && payload.productIds.length > 0) {
-            const productData = payload.productIds.map(productId => ({
-                promoId: promo.id,
-                productId
-            }));
-            await tx.promoProduct.createMany({ data: productData, skipDuplicates: true });
-        }
-
         return tx.promo.findUnique({
-            where: { id: promo.id },
-            include: { promoProducts: { include: { product: true } } }
+            where: { id: promo.id }
         });
     });
 };
@@ -113,28 +108,14 @@ const updatePromo = async (id: string, payload: UpdatePromoDto) => {
             data: updateData
         });
 
-        if (payload.productIds !== undefined) {
-            await tx.promoProduct.deleteMany({ where: { promoId: id } });
-            
-            if (payload.productIds.length > 0) {
-                const productData = payload.productIds.map(productId => ({
-                    promoId: promo.id,
-                    productId
-                }));
-                await tx.promoProduct.createMany({ data: productData, skipDuplicates: true });
-            }
-        }
-
         return tx.promo.findUnique({
-            where: { id },
-            include: { promoProducts: { include: { product: true } } }
+            where: { id }
         });
     });
 };
 
 const deletePromo = async (id: string) => {
     return prisma.$transaction(async (tx) => {
-        await tx.promoProduct.deleteMany({ where: { promoId: id } });
         await tx.promo.delete({ where: { id } });
         return true;
     });

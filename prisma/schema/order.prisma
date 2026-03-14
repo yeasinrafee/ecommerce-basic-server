@@ -1,0 +1,43 @@
+
+model Order {
+	id                  String   @id @default(uuid())
+
+	customer            Customer @relation(fields: [customerId], references: [id])
+	customerId          String
+	customerName        String
+	customerEmail       String
+	customerPhone       String?
+
+	address             Address  @relation(fields: [addressId], references: [id])
+	addressId           String
+
+	baseAmount          Float
+
+	promo               Promo?   @relation(fields: [promoId], references: [id])
+	promoId             String?
+
+	discountAmount      Float    @default(0)
+	finalAmount         Float
+
+	baseShippingCharge  Float    @default(0)
+	extraShippingCharge Float    @default(0)
+	finalShippingCharge Float    @default(0)
+
+	tax                 Float    @default(0)
+
+	totalWeight         Float    @default(0)
+	totalVolume         Float    @default(0)
+
+	chargePerWeight     Float?
+	chargePerVolume     Float?
+	weightUnit          Float?
+	volumeUnit          Float?
+
+	createdAt           DateTime @default(now())
+	updatedAt           DateTime @updatedAt
+
+	@@index([customerId])
+	@@index([addressId])
+	@@index([promoId])
+}
+

@@ -8,13 +8,11 @@ import { deleteCloudinaryAsset, getPublicIdFromUrl } from '../../common/utils/fi
 const getAdmins = async ({ page = 1, limit = 10, searchTerm, status }: AdminListQuery = {}): Promise<ServiceListResult<any>> => {
     const skip = (page - 1) * limit;
 
-    // Always restrict to admins whose related user has role = ADMIN
     const where: Prisma.AdminWhereInput = {
-        user: { role: Role.ADMIN }
+        user: { role: Role.ADMIN, verified: true }
     };
 
     if (searchTerm) {
-        // apply search on name or user's email while keeping role restriction
         where.AND = [
             {
                 OR: [
@@ -46,8 +44,7 @@ const getAdmins = async ({ page = 1, limit = 10, searchTerm, status }: AdminList
 };
 
 const getAdminById = async (id: string) => {
-    // use findFirst so we can restrict by related user role
-    return prisma.admin.findFirst({ where: { id, user: { role: Role.ADMIN } }, include: { user: true } });
+    return prisma.admin.findFirst({ where: { id, user: { role: Role.ADMIN, verified: true } }, include: { user: true } });
 };
 
 const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPublicId?: string | null) => {
@@ -58,7 +55,6 @@ const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPubli
 
     const previousPublicId = getPublicIdFromUrl(existing.image) ?? null;
 
-    // perform DB updates in a transaction
     const updated = await prisma.$transaction(async (tx) => {
         if (payload.email) {
             const other = await tx.user.findUnique({ where: { email: payload.email } });
@@ -73,7 +69,6 @@ const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPubli
         if (typeof payload.name === 'string') adminData.name = payload.name;
         if (payload.status !== undefined) adminData.status = payload.status as any;
         if (payload.image !== undefined) adminData.image = payload.image;
-        // Do not persist any Cloudinary public id in the DB; only store the image URL.
 
         const updatedAdmin = await tx.admin.update({ where: { id }, data: adminData });
         const user = await tx.user.findUnique({ where: { id: existing.userId } });
@@ -84,9 +79,9 @@ const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPubli
         };
     });
 
-    // After successful DB update, if a new publicId was provided, delete the previous cloud asset
+    
     try {
-        // If a new public id was provided (i.e. an upload happened), remove the previous asset
+        
         if (newUploadedPublicId !== undefined) {
             const newPub = newUploadedPublicId ?? null;
             if (previousPublicId && previousPublicId !== newPub) {
@@ -97,7 +92,7 @@ const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPubli
                 }
             }
         }
-        // If payload.image === null and there was a previous image, delete it
+
         if (payload.image === null && previousPublicId) {
             try {
                 await deleteCloudinaryAsset(previousPublicId);
@@ -106,7 +101,6 @@ const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPubli
             }
         }
     } catch (err) {
-        // swallow any unexpected errors from deletion logic
         console.warn('Unexpected error in post-update asset cleanup', (err as Error).message);
     }
 
@@ -140,7 +134,7 @@ const deleteAdmin = async (id: string) => {
 };
 
 const getAllAdmins = async () => {
-    return prisma.admin.findMany({ where: { user: { role: Role.ADMIN } }, include: { user: true }, orderBy: { createdAt: 'desc' } });
+    return prisma.admin.findMany({ where: { user: { role: Role.ADMIN, verified: true } }, include: { user: true }, orderBy: { createdAt: 'desc' } });
 };
 
 const adminServiceObj = {

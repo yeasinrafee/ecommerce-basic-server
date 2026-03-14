@@ -63,28 +63,28 @@ router.delete(
 router.get('/faq/get-all', asyncHandler(webController.getFaqs));
 router.get('/faq/get/:id', asyncHandler(webController.getFaq));
 router.post('/faq/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.createFaq));
-router.patch('/faq/update/:id?', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateFaq));
-router.delete('/faq/delete/:id?', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteFaq));
+router.patch('/faq/update/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateFaq));
+router.delete('/faq/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteFaq));
 
 
 router.get('/social-media/get-all', asyncHandler(webController.getSocialMediaLinks));
 router.get('/social-media/get/:id', asyncHandler(webController.getSocialMediaLink));
 router.post('/social-media/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.createSocialMediaLink));
-router.patch('/social-media/update/:id?', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateSocialMediaLink));
-router.delete('/social-media/delete/:id?', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSocialMediaLink));
+router.patch('/social-media/update/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateSocialMediaLink));
+router.delete('/social-media/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSocialMediaLink));
 
 
 router.get('/slider/get-all', asyncHandler(webController.getSliders));
 router.get('/slider/get/:id', asyncHandler(webController.getSlider));
 router.post('/slider/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), upload.any(), asyncHandler(webController.createSlider));
-router.patch('/slider/update/:id?', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), upload.any(), asyncHandler(webController.updateSlider));
-router.delete('/slider/delete/:id?', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSlider));
+router.patch('/slider/update/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), upload.any(), asyncHandler(webController.updateSlider));
+router.delete('/slider/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSlider));
 
 
 router.get('/testimonial/get-all', asyncHandler(webController.getTestimonials));
 router.get('/testimonial/get/:id', asyncHandler(webController.getTestimonial));
 router.post('/testimonial/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), upload.any(), asyncHandler(webController.createTestimonial));
-router.patch('/testimonial/update/:id?', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), upload.any(), asyncHandler(webController.updateTestimonial));
-router.delete('/testimonial/delete/:id?', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteTestimonial));
+router.patch('/testimonial/update/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), upload.any(), asyncHandler(webController.updateTestimonial));
+router.delete('/testimonial/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteTestimonial));
 
 export const webRoutes = router;

@@ -4,7 +4,34 @@ import { sendResponse } from '../../common/utils/send-response.js';
 import { normalizeUploadedFiles } from '../../common/utils/file-upload.js';
 import { setAuthCookies, clearAuthCookies } from '../../common/utils/cookie.js';
 import { authService } from './auth.service.js';
-import { validateCreateAdminPayload, validateLoginPayload } from './auth.types.js';
+import {
+	validateCreateAdminPayload,
+	validateLoginPayload,
+	validateVerifyOtpPayload,
+	validateSendOtpPayload,
+	validateForgotPasswordSendOtpPayload,
+	validateForgotPasswordVerifyOtpPayload,
+	validateResetPasswordPayload,
+	validateRegisterCustomerPayload,
+} from './auth.types.js';
+
+const registerCustomer = async (req: Request, res: Response) => {
+	const payload = validateRegisterCustomerPayload(req.body);
+
+	const result = await authService.registerCustomer(payload);
+
+	sendResponse({
+		res,
+		statusCode: 201,
+		success: true,
+		message: 'Registration successful. Please verify your OTP.',
+		data: result,
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
 
 const createAdmin = async (req: Request, res: Response) => {
 	const payload = validateCreateAdminPayload(req.body);
@@ -37,7 +64,7 @@ const login = async (req: Request, res: Response) => {
 		statusCode: 200,
 		success: true,
 		message: 'Logged in successfully',
-		data: result,
+		data: result.user,
 		errors: [],
 		meta: {
 			timestamp: new Date().toISOString()
@@ -66,7 +93,7 @@ const refreshToken = async (req: Request, res: Response) => {
 		statusCode: 200,
 		success: true,
 		message: 'Tokens refreshed successfully',
-		data: tokens,
+		data: null,
 		errors: [],
 		meta: {
 			timestamp: new Date().toISOString()
@@ -89,9 +116,105 @@ const logout = async (_req: Request, res: Response) => {
 	});
 };
 
+const verifyOtp = async (req: Request, res: Response) => {
+	const payload = validateVerifyOtpPayload(req.body);
+	const result = await authService.verifyOtp(payload);
+
+	setAuthCookies(res, result.tokens);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'OTP verified successfully',
+		data: result.user,
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
+
+const sendOtp = async (req: Request, res: Response) => {
+	const payload = validateSendOtpPayload(req.body);
+	const expiry = await authService.sendOtp(payload);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'OTP sent successfully',
+		data: { otpExpiry: expiry?.toISOString() ?? null },
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
+
+const forgotPasswordSendOtp = async (req: Request, res: Response) => {
+	const payload = validateForgotPasswordSendOtpPayload(req.body);
+	const data = await authService.forgotPasswordSendOtp(payload);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'Reset OTP sent successfully',
+		data: {
+			userId: data.userId,
+			otpExpiry: data.otpExpiry?.toISOString() ?? null
+		},
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
+
+const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
+	const payload = validateForgotPasswordVerifyOtpPayload(req.body);
+	await authService.forgotPasswordVerifyOtp(payload);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'OTP verified successfully',
+		data: null,
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
+
+const resetPassword = async (req: Request, res: Response) => {
+	const payload = validateResetPasswordPayload(req.body);
+	await authService.resetPassword(payload);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'Password reset successfully',
+		data: null,
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
+
 export const authController = {
+	registerCustomer,
 	createAdmin,
 	login,
 	refreshToken,
-	logout
+	logout,
+	verifyOtp,
+	sendOtp,
+	forgotPasswordSendOtp,
+	forgotPasswordVerifyOtp,
+	resetPassword
 };
