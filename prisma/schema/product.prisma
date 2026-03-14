@@ -10,6 +10,8 @@ model Product {
   discountValue     Float?
   stock             Int
   avgRating         Float         @default(0)
+  totalRatings      Int           @default(0)
+  totalReviews      Int           @default(0)
   weight            Float?
   length            Float?
   width             Float?
@@ -32,9 +34,25 @@ model Product {
   additionalInformations AdditionalInformation[]
   seos Seo[]
   productVariations ProductVariation[]
+  productReviews ProductReview[]
 
   wishlistItems WishlistItem[]
 
+}
+
+model ProductReview {
+  id        String         @id @default(uuid())
+  parentId  String?
+  parent    ProductReview? @relation("ProductReviewReplies", fields: [parentId], references: [id])
+  replies   ProductReview[] @relation("ProductReviewReplies")
+  content   String
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  productId String
+  product   Product        @relation(fields: [productId], references: [id])
+  rating    Int?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
 model Brand {
