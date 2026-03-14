@@ -7,7 +7,7 @@ const pool = new Pool({
   connectionString: env.databaseUrl
 });
 
-const adapter = new PrismaPg(pool);
+const adapter = new PrismaPg(pool as any);
 
 export const prisma = new PrismaClient({
   adapter,
