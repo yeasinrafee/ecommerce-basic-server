@@ -1,7 +1,7 @@
 import { prisma } from '../../config/prisma.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { CreatePromoDto, UpdatePromoDto, PromoListQuery } from './promo.types.js';
-import { toUpperUnderscore } from '../../common/utils/format.js';
+import { toUpperUnderscore, fromUpperUnderscore } from '../../common/utils/format.js';
 
 const getPromos = async ({ page = 1, limit = 10, searchTerm }: PromoListQuery) => {
     const skip = (page - 1) * limit;
@@ -22,8 +22,10 @@ const getPromos = async ({ page = 1, limit = 10, searchTerm }: PromoListQuery) =
         prisma.promo.count({ where })
     ]);
 
+    const converted = data.map((p: any) => ({ ...p, code: fromUpperUnderscore(p.code) }));
+
     return {
-        data,
+        data: converted,
         meta: {
             page,
             limit,
@@ -34,17 +36,22 @@ const getPromos = async ({ page = 1, limit = 10, searchTerm }: PromoListQuery) =
 };
 
 const getAllPromos = async () => {
-    return prisma.promo.findMany({
+    const data = await prisma.promo.findMany({
         orderBy: { createdAt: 'desc' },
         include: { promoProducts: { include: { product: true } } }
     });
+
+    return data.map((p: any) => ({ ...p, code: fromUpperUnderscore(p.code) }));
 };
 
 const getPromoById = async (id: string) => {
-    return prisma.promo.findUnique({
+    const promo = await prisma.promo.findUnique({
         where: { id },
         include: { promoProducts: { include: { product: true } } }
     });
+
+    if (!promo) return promo;
+    return { ...promo, code: fromUpperUnderscore(promo.code) };
 };
 
 const createPromo = async (payload: CreatePromoDto) => {
