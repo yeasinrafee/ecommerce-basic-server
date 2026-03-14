@@ -18,6 +18,7 @@ import {
   LoginInput,
   AuthResult,
   VerifyOtpInput,
+  SendOtpInput,
 } from "./auth.types.js";
 
 const createAdmin = async (
@@ -30,7 +31,7 @@ const createAdmin = async (
     },
   });
 
-  if (existingUser) {
+  if (existingUser && existingUser.verified) {
     throw new AppError(409, "Email is already registered", [
       {
         field: "email",
@@ -59,6 +60,12 @@ const createAdmin = async (
 
   try {
     const creationResult = await prisma.$transaction(async (tx) => {
+      if (existingUser) {
+        await tx.admin.deleteMany({ where: { userId: existingUser.id } });
+        await tx.oTP.deleteMany({ where: { userId: existingUser.id } });
+        await tx.user.delete({ where: { id: existingUser.id } });
+      }
+
       const user = await tx.user.create({
         data: {
           id: generatedUserId,
@@ -79,8 +86,9 @@ const createAdmin = async (
       return { user, admin };
     });
 
+    let otpExpiry: Date | undefined;
     try {
-      await otpService.generate({
+      otpExpiry = await otpService.generate({
         userId: creationResult.user.id,
         to: creationResult.user.email,
       });
@@ -100,6 +108,7 @@ const createAdmin = async (
         name: creationResult.admin.name,
         image: creationResult.admin.image,
         status: creationResult.admin.status,
+        otpExpiry: otpExpiry?.toISOString() ?? null,
       },
     };
   } catch (err) {
@@ -239,9 +248,56 @@ const verifyOtp = async (payload: VerifyOtpInput): Promise<void> => {
   });
 };
 
+const sendOtp = async (payload: SendOtpInput): Promise<Date> => {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: payload.userId,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found", [
+      {
+        message: "No user corresponds to the provided id",
+        code: "USER_NOT_FOUND",
+      },
+    ]);
+  }
+
+  if (user.verified) {
+    throw new AppError(400, "User already verified", [
+      {
+        message: "User is already verified",
+        code: "USER_ALREADY_VERIFIED",
+      },
+    ]);
+  }
+
+  const admin = await prisma.admin.findUnique({
+    where: {
+      userId: user.id,
+    },
+  });
+
+  if (!admin) {
+    throw new AppError(404, "Admin profile not found", [
+      {
+        message: "The user does not have an admin profile",
+        code: "ADMIN_PROFILE_NOT_FOUND",
+      },
+    ]);
+  }
+
+  return otpService.generate({
+    userId: user.id,
+    to: user.email,
+  });
+};
+
 export const authService = {
   createAdmin,
   login,
   refreshTokens,
   verifyOtp,
+  sendOtp,
 };

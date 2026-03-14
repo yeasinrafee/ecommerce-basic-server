@@ -4,7 +4,12 @@ import { sendResponse } from '../../common/utils/send-response.js';
 import { normalizeUploadedFiles } from '../../common/utils/file-upload.js';
 import { setAuthCookies, clearAuthCookies } from '../../common/utils/cookie.js';
 import { authService } from './auth.service.js';
-import { validateCreateAdminPayload, validateLoginPayload, validateVerifyOtpPayload } from './auth.types.js';
+import {
+	validateCreateAdminPayload,
+	validateLoginPayload,
+	validateVerifyOtpPayload,
+	validateSendOtpPayload,
+} from './auth.types.js';
 
 const createAdmin = async (req: Request, res: Response) => {
 	const payload = validateCreateAdminPayload(req.body);
@@ -106,10 +111,28 @@ const verifyOtp = async (req: Request, res: Response) => {
 	});
 };
 
+const sendOtp = async (req: Request, res: Response) => {
+	const payload = validateSendOtpPayload(req.body);
+	const expiry = await authService.sendOtp(payload);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'OTP sent successfully',
+		data: { otpExpiry: expiry?.toISOString() ?? null },
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
+
 export const authController = {
 	createAdmin,
 	login,
 	refreshToken,
 	logout,
-	verifyOtp
+	verifyOtp,
+	sendOtp
 };

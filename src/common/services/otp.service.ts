@@ -7,7 +7,7 @@ import { emailService } from './email.service.js';
 const DEFAULT_LENGTH = 6;
 const MIN_LENGTH = 4;
 const MAX_LENGTH = 10;
-const DEFAULT_EXPIRY_MINUTES = 15;
+const DEFAULT_EXPIRY_MINUTES = 10;
 
 interface GenerateOtpOptions {
   userId: string;
@@ -42,13 +42,15 @@ class OtpService {
     return crypto.createHash('sha256').update(code).digest('hex');
   }
 
-  async generate(options: GenerateOtpOptions): Promise<void> {
+  async generate(options: GenerateOtpOptions): Promise<Date> {
     const effectiveLength = Math.min(Math.max(options.length ?? DEFAULT_LENGTH, MIN_LENGTH), MAX_LENGTH);
-    const code = this.createNumericCode(effectiveLength);
     const expiryMinutes = Math.max((options.expiryMinutes ?? DEFAULT_EXPIRY_MINUTES), 1);
     const expiryDate = new Date(Date.now() + expiryMinutes * 60 * 1000);
-    const hashedCode = this.hashCode(code);
 
+    const newCode = this.createNumericCode(effectiveLength);
+    const hashedCode = this.hashCode(newCode);
+
+    // Always remove any existing OTPs (used or stale) and create a fresh one.
     await prisma.$transaction(async (tx) => {
       await tx.oTP.deleteMany({ where: { userId: options.userId } });
       await tx.oTP.create({
@@ -60,7 +62,9 @@ class OtpService {
       });
     });
 
-    await emailService.sendOtpEmail(options.to, code);
+    await emailService.sendOtpEmail(options.to, newCode);
+
+    return expiryDate;
   }
 
   async verify(options: VerifyOtpOptions): Promise<OtpRecord> {

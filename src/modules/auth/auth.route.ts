@@ -27,6 +27,7 @@ router.post("/login", asyncHandler(authController.login));
 router.post("/refresh", asyncHandler(authController.refreshToken));
 
 router.post("/otp/verify", asyncHandler(authController.verifyOtp));
+router.post("/otp/send", asyncHandler(authController.sendOtp));
 
 router.post("/logout", asyncHandler(authController.logout));
 

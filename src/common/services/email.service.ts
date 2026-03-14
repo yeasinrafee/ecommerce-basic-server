@@ -12,6 +12,8 @@ interface EmailOptions {
 class EmailService {
   private transporter: nodemailer.Transporter;
 
+  private maxSendAttempts = 3;
+
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: env.mailHost,
@@ -22,6 +24,13 @@ class EmailService {
         pass: env.mailPass,
       },
     });
+
+    // Verify SMTP connection asynchronously at startup so failures are visible early
+    this.transporter.verify().then(() => {
+      console.log('SMTP transporter verified');
+    }).catch((err) => {
+      console.warn('SMTP transporter verification failed', err?.message ?? err);
+    });
   }
 
   /**
@@ -30,23 +39,57 @@ class EmailService {
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
+      // If mail config is not provided, in development log emails instead of throwing.
+      if (!env.mailHost || !env.mailUser || !env.mailPass) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('DEV EMAIL (not sent) ->', {
+            to: options.to,
+            subject: options.subject,
+            text: options.text ?? this.stripHtml(options.html ?? ''),
+            html: options.html
+          });
+          return true;
+        }
+        throw new Error('Mail configuration missing (mailHost/mailUser/mailPass)');
+      }
+
       const mailOptions: nodemailer.SendMailOptions = {
-        from: `"${env.mailFrom.split('@')[0]}" <${env.mailFrom}>`,
+        from: `${env.mailFrom ? `"${env.mailFrom.split('@')[0]}" <${env.mailFrom}>` : env.mailUser}`,
         to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
         subject: options.subject,
         html: options.html ? this.applyBaseStyling(options.html) : undefined,
-        text: options.text,
+        text: options.text ?? this.stripHtml(options.html ?? ''),
         attachments: options.attachments,
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully to ${mailOptions.to}. MessageId: ${info.messageId}`);
-      return true;
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+      let lastErr: any = null;
+      for (let attempt = 1; attempt <= this.maxSendAttempts; attempt++) {
+        try {
+          const info = await this.transporter.sendMail(mailOptions);
+          console.log(`Email sent successfully to ${mailOptions.to}. MessageId: ${info.messageId}`);
+          return true;
+        } catch (err) {
+          lastErr = err;
+          console.warn(`Email send attempt ${attempt} failed`, err?.message ?? err);
+          if (attempt < this.maxSendAttempts) {
+            // exponential backoff
+            await sleep(250 * Math.pow(2, attempt));
+          }
+        }
+      }
+
+      // All attempts failed
+      throw lastErr;
     } catch (error) {
-      console.error('Failed to send email:', error);
-      // Depending on your error handling logic, you can throw or return false
+      console.error('Failed to send email:', error?.message ?? error);
       throw error;
     }
+  }
+
+  private stripHtml(html: string) {
+    return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
   /**
@@ -164,9 +207,9 @@ class EmailService {
       <p>Hello,</p>
       <p>Your OTP code for verification is:</p>
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 4px; display: inline-block; margin: 20px 0; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #007bff;">
-        \${otp}
-      </div>
-      <p>Please use this code within the next 10 minutes. If you did not request this, please ignore this email.</p>
+          ${otp}
+        </div>
+      <p>Please use this code within the next 15 minutes. If you did not request this, please ignore this email.</p>
     `;
 
     return this.sendEmail({

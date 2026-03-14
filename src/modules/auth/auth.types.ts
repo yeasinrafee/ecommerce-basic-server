@@ -72,6 +72,15 @@ export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export const validateVerifyOtpPayload = (payload: unknown): VerifyOtpInput =>
 	parsePayload(verifyOtpSchema, payload);
 
+export const sendOtpSchema = z.object({
+	userId: z.string().uuid('Invalid user id')
+});
+
+export type SendOtpInput = z.infer<typeof sendOtpSchema>;
+
+export const validateSendOtpPayload = (payload: unknown): SendOtpInput =>
+	parsePayload(sendOtpSchema, payload);
+
 export type AdminUserShape = {
 	id: string;
 	email: string;
@@ -79,6 +88,7 @@ export type AdminUserShape = {
 	name: string;
 	image: string | null;
 	status: 'ACTIVE' | 'INACTIVE';
+	otpExpiry?: string | null;
 };
 
 export type CreateAdminResult = {
