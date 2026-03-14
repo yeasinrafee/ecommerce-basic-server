@@ -50,7 +50,6 @@ class OtpService {
     const newCode = this.createNumericCode(effectiveLength);
     const hashedCode = this.hashCode(newCode);
 
-    // Always remove any existing OTPs (used or stale) and create a fresh one.
     await prisma.$transaction(async (tx) => {
       await tx.oTP.deleteMany({ where: { userId: options.userId } });
       await tx.oTP.create({
@@ -62,7 +61,7 @@ class OtpService {
       });
     });
 
-    await emailService.sendOtpEmail(options.to, newCode);
+    await emailService.sendOtpEmail(options.to, newCode, expiryMinutes);
 
     return expiryDate;
   }

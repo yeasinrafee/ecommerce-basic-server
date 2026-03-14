@@ -201,20 +201,25 @@ class EmailService {
   }
 
   // Pre-built template for OTPs as an example
-  async sendOtpEmail(to: string, otp: string): Promise<boolean> {
+  async sendOtpEmail(to: string, otp: string, expiryMinutes?: number): Promise<boolean> {
+    const minutes = typeof expiryMinutes === 'number' ? expiryMinutes : 15;
+    const expiryDate = new Date(Date.now() + minutes * 60 * 1000);
+    const expiryText = `within the next ${minutes} minute${minutes === 1 ? '' : 's'}`;
+
     const html = `
       <h2 style="margin-bottom: 20px;">Your One-Time Password (OTP)</h2>
       <p>Hello,</p>
       <p>Your OTP code for verification is:</p>
       <div style="background-color: #f8f9fa; padding: 15px; border-radius: 4px; display: inline-block; margin: 20px 0; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #007bff;">
           ${otp}
-        </div>
-      <p>Please use this code within the next 15 minutes. If you did not request this, please ignore this email.</p>
+      </div>
+      <p>Please use this code ${expiryText}. If you did not request this, please ignore this email.</p>
+      <p style="margin-top:10px;font-size:13px;color:#666;">This code will expire at <strong>${expiryDate.toLocaleString()}</strong> (server time).</p>
     `;
 
     return this.sendEmail({
       to,
-      subject: 'Your OTP Code',
+      subject: `Your OTP Code (expires in ${minutes} min)` ,
       html,
     });
   }
