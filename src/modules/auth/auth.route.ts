@@ -29,6 +29,10 @@ router.post("/refresh", asyncHandler(authController.refreshToken));
 router.post("/otp/verify", asyncHandler(authController.verifyOtp));
 router.post("/otp/send", asyncHandler(authController.sendOtp));
 
+router.post("/forgot-password/send-otp", asyncHandler(authController.forgotPasswordSendOtp));
+router.post("/forgot-password/verify-otp", asyncHandler(authController.forgotPasswordVerifyOtp));
+router.post("/forgot-password/reset", asyncHandler(authController.resetPassword));
+
 router.post("/logout", asyncHandler(authController.logout));
 
 export const authRoutes = router;

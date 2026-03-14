@@ -19,6 +19,9 @@ import {
   AuthResult,
   VerifyOtpInput,
   SendOtpInput,
+  ForgotPasswordSendOtpInput,
+  ForgotPasswordVerifyOtpInput,
+  ResetPasswordInput
 } from "./auth.types.js";
 
 const createAdmin = async (
@@ -294,10 +297,60 @@ const sendOtp = async (payload: SendOtpInput): Promise<Date> => {
   });
 };
 
+const forgotPasswordSendOtp = async (payload: ForgotPasswordSendOtpInput) => {
+  const user = await prisma.user.findUnique({
+    where: { email: payload.email },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found", [
+      {
+        field: "email",
+        message: "No user corresponds to the provided email",
+        code: "USER_NOT_FOUND",
+      },
+    ]);
+  }
+
+  const otpExpiry = await otpService.generate({
+    userId: user.id,
+    to: user.email,
+  });
+
+  return { userId: user.id, otpExpiry };
+};
+
+const forgotPasswordVerifyOtp = async (payload: ForgotPasswordVerifyOtpInput) => {
+  await otpService.verify({
+    userId: payload.userId,
+    code: payload.code,
+    consume: false, // Wait until they enter new password to consume
+  });
+};
+
+const resetPassword = async (payload: ResetPasswordInput) => {
+  // Verify and consume OTP in this final step
+  await otpService.verify({
+    userId: payload.userId,
+    code: payload.code,
+    consume: true,
+  });
+
+  const hashedPassword = await bcrypt.hash(payload.newPassword, 12);
+  await prisma.user.update({
+    where: { id: payload.userId },
+    data: { password: hashedPassword },
+  });
+};
+
 export const authService = {
   createAdmin,
   login,
   refreshTokens,
   verifyOtp,
   sendOtp,
+  forgotPasswordSendOtp,
+  forgotPasswordVerifyOtp,
+  resetPassword,
 };
+

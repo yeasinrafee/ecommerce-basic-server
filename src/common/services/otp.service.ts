@@ -19,6 +19,7 @@ interface GenerateOtpOptions {
 interface VerifyOtpOptions {
   userId: string;
   code: string;
+  consume?: boolean; // Default true
   onVerified?: (tx: Prisma.TransactionClient, record: OtpRecord) => Promise<void>;
 }
 
@@ -92,7 +93,9 @@ class OtpService {
         ]);
       }
 
-      await tx.oTP.delete({ where: { id: record.id } });
+      if (options.consume !== false) {
+        await tx.oTP.delete({ where: { id: record.id } });
+      }
 
       if (options.onVerified) {
         await options.onVerified(tx, {

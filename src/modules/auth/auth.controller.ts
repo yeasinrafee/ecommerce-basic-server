@@ -9,6 +9,9 @@ import {
 	validateLoginPayload,
 	validateVerifyOtpPayload,
 	validateSendOtpPayload,
+	validateForgotPasswordSendOtpPayload,
+	validateForgotPasswordVerifyOtpPayload,
+	validateResetPasswordPayload,
 } from './auth.types.js';
 
 const createAdmin = async (req: Request, res: Response) => {
@@ -128,11 +131,68 @@ const sendOtp = async (req: Request, res: Response) => {
 	});
 };
 
+const forgotPasswordSendOtp = async (req: Request, res: Response) => {
+	const payload = validateForgotPasswordSendOtpPayload(req.body);
+	const data = await authService.forgotPasswordSendOtp(payload);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'Reset OTP sent successfully',
+		data: {
+			userId: data.userId,
+			otpExpiry: data.otpExpiry?.toISOString() ?? null
+		},
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
+
+const forgotPasswordVerifyOtp = async (req: Request, res: Response) => {
+	const payload = validateForgotPasswordVerifyOtpPayload(req.body);
+	await authService.forgotPasswordVerifyOtp(payload);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'OTP verified successfully',
+		data: null,
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
+
+const resetPassword = async (req: Request, res: Response) => {
+	const payload = validateResetPasswordPayload(req.body);
+	await authService.resetPassword(payload);
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'Password reset successfully',
+		data: null,
+		errors: [],
+		meta: {
+			timestamp: new Date().toISOString()
+		}
+	});
+};
+
 export const authController = {
 	createAdmin,
 	login,
 	refreshToken,
 	logout,
 	verifyOtp,
-	sendOtp
+	sendOtp,
+	forgotPasswordSendOtp,
+	forgotPasswordVerifyOtp,
+	resetPassword
 };
