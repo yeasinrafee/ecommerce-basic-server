@@ -28,8 +28,9 @@ class EmailService {
     // Verify SMTP connection asynchronously at startup so failures are visible early
     this.transporter.verify().then(() => {
       console.log('SMTP transporter verified');
-    }).catch((err) => {
-      console.warn('SMTP transporter verification failed', err?.message ?? err);
+    }).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('SMTP transporter verification failed', msg);
     });
   }
 
@@ -72,7 +73,8 @@ class EmailService {
           return true;
         } catch (err) {
           lastErr = err;
-          console.warn(`Email send attempt ${attempt} failed`, err?.message ?? err);
+          const msg = err instanceof Error ? err.message : String(err);
+          console.warn(`Email send attempt ${attempt} failed`, msg);
           if (attempt < this.maxSendAttempts) {
             // exponential backoff
             await sleep(250 * Math.pow(2, attempt));
@@ -82,8 +84,9 @@ class EmailService {
 
       // All attempts failed
       throw lastErr;
-    } catch (error) {
-      console.error('Failed to send email:', error?.message ?? error);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Failed to send email:', msg);
       throw error;
     }
   }

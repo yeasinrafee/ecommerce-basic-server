@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../../src/config/prisma.js";
 
-const EMAIL = process.env.SUPERADMIN_EMAIL || "superadmin@example.com";
+const EMAIL = process.env.SUPERADMIN_EMAIL || "abdurrahmanayon66@gmail.com";
 const PASSWORD = process.env.SUPERADMIN_PASSWORD || "12345678";
 const NAME = process.env.SUPERADMIN_NAME || "Super Admin";
 
