@@ -125,3 +125,40 @@ This document outlines the API flow for customer registration and login.
   }
 }
 ```
+
+---
+
+## 5. Password Reset Workflow
+
+Since passwords are stored in the `User` model, this flow works for both Admins and Customers.
+
+### Step 1: Send Forget Password OTP
+**Endpoint:** `POST /api/auth/forgot-password/send-otp`  
+**Request Body:**
+```json
+{
+  "email": "john@example.com"
+}
+```
+
+### Step 2: Verify OTP
+**Endpoint:** `POST /api/auth/forgot-password/verify-otp`  
+**Request Body:**
+```json
+{
+  "userId": "uuid-from-step-1",
+  "code": "123456"
+}
+```
+
+### Step 3: Reset Password
+**Endpoint:** `POST /api/auth/forgot-password/reset`  
+**Request Body:**
+```json
+{
+  "userId": "uuid-from-step-1",
+  "code": "123456",
+  "newPassword": "newSecurePassword123"
+}
+```
+
