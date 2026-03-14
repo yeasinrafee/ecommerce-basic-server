@@ -100,6 +100,29 @@ export type ForgotPasswordVerifyOtpInput = z.infer<typeof forgotPasswordVerifyOt
 export const validateForgotPasswordVerifyOtpPayload = (payload: unknown): ForgotPasswordVerifyOtpInput =>
 	parsePayload(forgotPasswordVerifyOtpSchema, payload);
 
+export const registerCustomerSchema = z.object({
+	name: z
+		.string()
+		.trim()
+		.min(1, 'Name is required')
+		.min(2, 'Name must be at least 2 characters'),
+	email: z
+		.string()
+		.trim()
+		.min(1, 'Email is required')
+		.email('A valid email address is required'),
+	password: z
+		.string()
+		.min(1, 'Password is required')
+		.min(8, 'Password must be at least 8 characters')
+		.max(100, 'Password cannot be longer than 100 characters')
+});
+
+export type RegisterCustomerInput = z.infer<typeof registerCustomerSchema>;
+
+export const validateRegisterCustomerPayload = (payload: unknown): RegisterCustomerInput =>
+	parsePayload(registerCustomerSchema, payload);
+
 export const resetPasswordSchema = z.object({
 	userId: z.string().uuid('Invalid user id'),
 	code: z.string().trim().min(4, 'OTP is required').max(10, 'OTP is too long'),
@@ -112,6 +135,16 @@ export const resetPasswordSchema = z.object({
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export const validateResetPasswordPayload = (payload: unknown): ResetPasswordInput =>
 	parsePayload(resetPasswordSchema, payload);
+
+export interface CustomerUserShape {
+	id: string;
+	email: string;
+	role: Role;
+	name: string;
+	phone: string | null;
+	image: string | null;
+	status: 'ACTIVE' | 'INACTIVE';
+}
 
 export type AdminUserShape = {
 	id: string;
@@ -128,7 +161,7 @@ export type CreateAdminResult = {
 };
 
 export type AuthResult = {
-	user: AdminUserShape;
+	user: AdminUserShape | CustomerUserShape;
 	tokens: AuthTokens;
 };
 
