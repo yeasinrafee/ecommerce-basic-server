@@ -16,8 +16,7 @@ const getPromos = async ({ page = 1, limit = 10, searchTerm }: PromoListQuery) =
             where,
             skip,
             take: limit,
-            orderBy: { createdAt: 'desc' },
-            include: { promoProducts: { include: { product: true } } }
+            orderBy: { createdAt: 'desc' }
         }),
         prisma.promo.count({ where })
     ]);
@@ -37,8 +36,7 @@ const getPromos = async ({ page = 1, limit = 10, searchTerm }: PromoListQuery) =
 
 const getAllPromos = async () => {
     const data = await prisma.promo.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: { promoProducts: { include: { product: true } } }
+        orderBy: { createdAt: 'desc' }
     });
 
     return data.map((p: any) => ({ ...p, code: fromUpperUnderscore(p.code) }));
@@ -46,8 +44,7 @@ const getAllPromos = async () => {
 
 const getPromoById = async (id: string) => {
     const promo = await prisma.promo.findUnique({
-        where: { id },
-        include: { promoProducts: { include: { product: true } } }
+        where: { id }
     });
 
     if (!promo) return promo;
@@ -74,17 +71,8 @@ const createPromo = async (payload: CreatePromoDto) => {
             }
         });
 
-        if (payload.productIds && payload.productIds.length > 0) {
-            const productData = payload.productIds.map(productId => ({
-                promoId: promo.id,
-                productId
-            }));
-            await tx.promoProduct.createMany({ data: productData, skipDuplicates: true });
-        }
-
         return tx.promo.findUnique({
-            where: { id: promo.id },
-            include: { promoProducts: { include: { product: true } } }
+            where: { id: promo.id }
         });
     });
 };
@@ -120,28 +108,14 @@ const updatePromo = async (id: string, payload: UpdatePromoDto) => {
             data: updateData
         });
 
-        if (payload.productIds !== undefined) {
-            await tx.promoProduct.deleteMany({ where: { promoId: id } });
-            
-            if (payload.productIds.length > 0) {
-                const productData = payload.productIds.map(productId => ({
-                    promoId: promo.id,
-                    productId
-                }));
-                await tx.promoProduct.createMany({ data: productData, skipDuplicates: true });
-            }
-        }
-
         return tx.promo.findUnique({
-            where: { id },
-            include: { promoProducts: { include: { product: true } } }
+            where: { id }
         });
     });
 };
 
 const deletePromo = async (id: string) => {
     return prisma.$transaction(async (tx) => {
-        await tx.promoProduct.deleteMany({ where: { promoId: id } });
         await tx.promo.delete({ where: { id } });
         return true;
     });

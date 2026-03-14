@@ -7,7 +7,6 @@ export type CreatePromoDto = {
     numberOfUses: number;
     startDate: string | Date;
     endDate: string | Date;
-    productIds?: string[];
 };
 
 export type UpdatePromoDto = Partial<CreatePromoDto>;

@@ -36,7 +36,6 @@ model Product {
 
   wishlistItems WishlistItem[]
 
-  promoProducts PromoProduct[]
 }
 
 model Brand {

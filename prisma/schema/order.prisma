@@ -37,6 +37,7 @@ model Order {
 	updatedAt           DateTime @updatedAt
 
 	@@index([customerId])
+	@@index([addressId])
 	@@index([promoId])
 }
 
