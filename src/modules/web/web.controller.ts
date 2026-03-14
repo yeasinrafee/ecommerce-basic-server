@@ -332,7 +332,6 @@ const updateSlider = async (req: Request, res: Response) => {
         const existing = initialArr.length ? await webService.getSlidersByIds(initialArr.map(i => i.id).filter(Boolean)) : [];
         const { arr, uploadedIds, oldImagesToDelete } = await processFilesAndPayload(req, 'sliders', false, false, existing);
         newIds = uploadedIds;
-        
         const data = await webService.updateSlider(arr.length === 1 ? arr[0] : arr);
         for (const pid of oldImagesToDelete) await deleteCloudinaryAsset(pid).catch(() => {});
         

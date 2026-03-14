@@ -161,15 +161,28 @@ const getSlider = async (id: string) => prisma.slider.findUnique({ where: { id }
 const getSlidersByIds = async (ids: string[]) => prisma.slider.findMany({ where: { id: { in: ids } } });
 const createSlider = async (payload: CreateSliderDto | CreateSliderDto[]) => {
     if (Array.isArray(payload)) {
-        return prisma.$transaction(payload.map(data => prisma.slider.create({ data })));
+        const maxRes = await prisma.slider.aggregate({ _max: { serial: true } });
+        let nextSerial = (maxRes._max.serial ?? 0) + 1;
+
+        const createData = payload.map(p => ({ ...p, serial: nextSerial++ }));
+        return prisma.$transaction(createData.map(data => prisma.slider.create({ data })));
     }
-    return prisma.slider.create({ data: payload });
+
+    const maxRes = await prisma.slider.aggregate({ _max: { serial: true } });
+    const newSerial = (maxRes._max.serial ?? 0) + 1;
+    const data = { ...payload, serial: newSerial };
+    return prisma.slider.create({ data });
 };
 const updateSlider = async (payload: UpdateSliderDto | UpdateSliderDto[]) => {
     if (Array.isArray(payload)) {
-        return prisma.$transaction(payload.map(data => prisma.slider.update({ where: { id: data.id }, data })));
+        return prisma.$transaction(payload.map(item => {
+            const { id, ...rest } = item;
+            return prisma.slider.update({ where: { id }, data: rest });
+        }));
     }
-    return prisma.slider.update({ where: { id: payload.id }, data: payload });
+
+    const { id, ...rest } = payload;
+    return prisma.slider.update({ where: { id }, data: rest });
 };
 const deleteSlider = async (ids: string | string[]) => {
     const idArray = Array.isArray(ids) ? ids : [ids];
