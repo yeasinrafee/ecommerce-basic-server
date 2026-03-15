@@ -39,5 +39,6 @@ export const env = {
   mailFrom: required(process.env.MAIL_FROM, 'MAIL_FROM'),
   redisHost: process.env.REDIS_HOST ?? '127.0.0.1',
   redisPort: Number(process.env.REDIS_PORT ?? 6379),
-  redisPassword: process.env.REDIS_PASSWORD
+  redisPassword: process.env.REDIS_PASSWORD,
+  redisDb: Number(process.env.REDIS_DB ?? 0),
 };
