@@ -17,7 +17,7 @@ class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: env.mailHost,
-      port: 465, // Use 465 for true SSL/TLS. Use 587 for STARTTLS.
+      port: 465, 
       secure: true,
       auth: {
         user: env.mailUser,
@@ -25,7 +25,6 @@ class EmailService {
       },
     });
 
-    // Verify SMTP connection asynchronously at startup so failures are visible early
     this.transporter.verify().then(() => {
       console.log('SMTP transporter verified');
     }).catch((err: unknown) => {
@@ -34,13 +33,9 @@ class EmailService {
     });
   }
 
-  /**
-   * Send an email with robust configurations.
-   * Supports HTML, Plain Text, and Attachments (PDFs, Images, etc.)
-   */
+
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-      // If mail config is not provided, in development log emails instead of throwing.
       if (!env.mailHost || !env.mailUser || !env.mailPass) {
         if (process.env.NODE_ENV === 'development') {
           console.log('DEV EMAIL (not sent) ->', {
@@ -76,13 +71,11 @@ class EmailService {
           const msg = err instanceof Error ? err.message : String(err);
           console.warn(`Email send attempt ${attempt} failed`, msg);
           if (attempt < this.maxSendAttempts) {
-            // exponential backoff
             await sleep(250 * Math.pow(2, attempt));
           }
         }
       }
 
-      // All attempts failed
       throw lastErr;
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -95,10 +88,6 @@ class EmailService {
     return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  /**
-   * Applies base styling/wrapper to any HTML code so it looks good on all email clients.
-   * You can inject your dynamic HTML into the body of this template.
-   */
   private applyBaseStyling(contentHtml: string): string {
     return `
       <!DOCTYPE html>
@@ -203,7 +192,6 @@ class EmailService {
     `;
   }
 
-  // Pre-built template for OTPs as an example
   async sendOtpEmail(to: string, otp: string, expiryMinutes?: number): Promise<boolean> {
     const minutes = typeof expiryMinutes === 'number' ? expiryMinutes : 15;
     const expiryDate = new Date(Date.now() + minutes * 60 * 1000);
@@ -227,7 +215,6 @@ class EmailService {
     });
   }
 
-  // Pre-built template for general alerts or invoices with attachments
   async sendInvoiceEmail(to: string, userName: string, pdfBuffer: Buffer): Promise<boolean> {
     const html = `
       <h3>Invoice Ready</h3>
@@ -251,5 +238,4 @@ class EmailService {
   }
 }
 
-// Export as a singleton
 export const emailService = new EmailService();
