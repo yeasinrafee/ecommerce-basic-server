@@ -136,4 +136,19 @@ export const orderEmailTemplates = {
     `;
     return layout('Order Cancelled', content);
   },
+
+  statusUpdate: (order: any, status: string) => {
+    switch (status) {
+      case 'CONFIRMED':
+        return orderEmailTemplates.orderConfirmed(order.customerName, order.finalAmount);
+      case 'SHIPPED':
+        return orderEmailTemplates.orderShipped(order.customerName);
+      case 'DELIVERED':
+        return orderEmailTemplates.orderDelivered(order.customerName);
+      case 'CANCELLED':
+        return orderEmailTemplates.orderCancelled(order.customerName);
+      default:
+        return orderEmailTemplates.orderPlaced(order.customerName, order.finalAmount);
+    }
+  },
 };

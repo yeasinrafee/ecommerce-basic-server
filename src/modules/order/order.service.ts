@@ -251,11 +251,193 @@ export const createOrderService = async (
     return order;
   });
 
-  void emailService.queueEmail({
-    to: data.customerEmail || '',
+  void emailService.sendEmail({
+    to: result.customerEmail || '',
     subject: `Order Placed Successfully`,
-    html: orderEmailTemplates.orderPlaced(data.customerName, result.finalAmount),
+    html: orderEmailTemplates.orderPlaced(result.customerName, result.finalAmount),
   });
 
   return result;
+};
+
+export const getAllOrdersService = async (
+  page: number,
+  limit: number,
+  searchTerm?: string
+) => {
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+
+  if (searchTerm) {
+    where.OR = [
+      { customerName: { contains: searchTerm, mode: 'insensitive' } },
+      { customerEmail: { contains: searchTerm, mode: 'insensitive' } },
+      { customerPhone: { contains: searchTerm, mode: 'insensitive' } },
+    ];
+  }
+
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        customer: true,
+        orderItems: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    }),
+    prisma.order.count({ where }),
+  ]);
+
+  return {
+    orders,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+export const getOrdersByCustomerService = async (userId: string) => {
+  const customer = await prisma.customer.findUnique({
+    where: { userId },
+  });
+
+  if (!customer) {
+    throw new AppError(404, 'Customer not found');
+  }
+
+  return prisma.order.findMany({
+    where: { customerId: customer.id },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+};
+
+export const getOrderByIdService = async (orderId: string, userId?: string, roles?: string[]) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      customer: true,
+      address: true,
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    throw new AppError(404, 'Order not found');
+  }
+
+  if (userId && roles) {
+    const isAdmin = roles.includes('ADMIN') || roles.includes('SUPER_ADMIN');
+    if (!isAdmin) {
+      const customer = await prisma.customer.findUnique({ where: { userId } });
+      if (!customer || order.customerId !== customer.id) {
+        throw new AppError(403, 'Unauthorized access to this order');
+      }
+    }
+  }
+
+  return order;
+};
+
+export const updateOrderStatusService = async (orderId: string, status: any) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      customer: {
+        include: {
+          user: true
+        }
+      }
+    },
+  });
+
+  if (!order) {
+    throw new AppError(404, 'Order not found');
+  }
+
+  const updatedOrder = await prisma.order.update({
+    where: { id: orderId },
+    data: { orderStatus: status },
+  });
+
+  // Background email processing using BullMQ via emailQueue.add
+  await emailQueue.add('sendEmail', {
+    to: order.customerEmail || order.customer.user.email,
+    subject: `Order Status Update: ${status}`,
+    html: orderEmailTemplates.statusUpdate(order, status),
+  });
+
+  return updatedOrder;
+};
+
+export const cancelOrderService = async (orderId: string, userId: string) => {
+  const customer = await prisma.customer.findUnique({
+    where: { userId },
+  });
+
+  if (!customer) {
+    throw new AppError(404, 'Customer not found');
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      customer: {
+        include: {
+          user: true,
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    throw new AppError(404, 'Order not found');
+  }
+
+  if (order.customerId !== customer.id) {
+    throw new AppError(403, 'You are not authorized to cancel this order');
+  }
+
+  if (order.orderStatus === 'CANCELLED') {
+    throw new AppError(400, 'Order is already cancelled');
+  }
+
+  // Optional: Check if order is already shipped/delivered and prevent cancellation
+  if (['SHIPPED', 'DELIVERED'].includes(order.orderStatus)) {
+    throw new AppError(400, `Cannot cancel an order that is already ${order.orderStatus.toLowerCase()}`);
+  }
+
+  const updatedOrder = await prisma.order.update({
+    where: { id: orderId },
+    data: { orderStatus: 'CANCELLED' },
+  });
+
+  // Background email for cancellation
+  await emailQueue.add('sendEmail', {
+    to: order.customerEmail || order.customer.user.email,
+    subject: 'Order Cancelled',
+    html: orderEmailTemplates.orderCancelled(order.customerName),
+  });
+
+  return updatedOrder;
 };
