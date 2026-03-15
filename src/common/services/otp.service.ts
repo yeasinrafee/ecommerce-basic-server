@@ -7,7 +7,7 @@ import { emailService } from './email.service.js';
 const DEFAULT_LENGTH = 6;
 const MIN_LENGTH = 4;
 const MAX_LENGTH = 10;
-const DEFAULT_EXPIRY_MINUTES = 5;
+const DEFAULT_EXPIRY_MINUTES = 10;
 
 interface GenerateOtpOptions {
   userId: string;
