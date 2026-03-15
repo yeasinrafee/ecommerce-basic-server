@@ -21,3 +21,11 @@ enum Status {
   INACTIVE
 }
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
