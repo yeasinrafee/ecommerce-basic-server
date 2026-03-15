@@ -3,7 +3,7 @@ import { AppError } from '../../common/errors/app-error.js';
 import { DiscountType } from '@prisma/client';
 import type { CreateOrderDto } from './order.types.js';
 import type { PrismaClient } from '@prisma/client';
-import { emailService } from '../../common/services/email.service.js';
+import { emailService, emailQueue } from '../../common/services/email.service.js';
 import { orderEmailTemplates } from './order.email-templates.js';
 
 export const createOrderService = async (

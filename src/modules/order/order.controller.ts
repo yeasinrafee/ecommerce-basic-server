@@ -55,11 +55,11 @@ export const getOrdersByCustomer = async (req: Request, res: Response, next: Nex
 
 export const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user?.id;
-    const roles = req.user?.roles;
+    const role = req.user?.role;
 
-    const order = await getOrderByIdService(id, userId, roles);
+    const order = await getOrderByIdService(id, userId, role ? [role] : []);
     res.status(200).json({ success: true, data: order });
   } catch (error) {
     next(error);
@@ -68,7 +68,7 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
 
 export const updateOrderStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { status } = req.body;
 
     if (!status) {
@@ -85,7 +85,7 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
 
 export const cancelOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user?.id;
 
     if (!userId) {

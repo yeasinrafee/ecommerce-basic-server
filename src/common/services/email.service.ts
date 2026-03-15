@@ -11,7 +11,7 @@ interface EmailOptions {
   attachments?: nodemailer.SendMailOptions['attachments'];
 }
 
-export const emailQueue = createQueue('emailQueue');
+export const emailQueue = createQueue('emailQueue', { verify: true });
 
 class EmailService {
   private transporter: nodemailer.Transporter;
@@ -248,7 +248,12 @@ class EmailService {
 
 export const emailService = new EmailService();
 
-export const emailWorker = createWorker('emailQueue', async (job: Job) => {
-  const data = job.data as EmailOptions;
-  await emailService.sendEmail(data);
-});
+export const emailWorker = createWorker(
+  'emailQueue',
+  async (job: Job) => {
+    const data = job.data as EmailOptions;
+    await emailService.sendEmail(data);
+  },
+  5,
+  { verify: true }
+);
