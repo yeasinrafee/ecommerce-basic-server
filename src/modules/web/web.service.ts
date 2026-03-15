@@ -152,7 +152,14 @@ const updateSocialMediaLink = async (payload: UpdateSocialMediaLinkDto | UpdateS
 };
 const deleteSocialMediaLink = async (ids: string | string[]) => {
     const idArray = Array.isArray(ids) ? ids : [ids];
-    return prisma.socialMediaLink.deleteMany({ where: { id: { in: idArray } } });
+
+    // Use a transaction to ensure atomicity when deleting multiple records.
+    // This also makes it safe to add additional cleanup logic later.
+    const [result] = await prisma.$transaction([
+        prisma.socialMediaLink.deleteMany({ where: { id: { in: idArray } } })
+    ]);
+
+    return result;
 };
 
 // --- Slider ---

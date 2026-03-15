@@ -72,6 +72,7 @@ router.get('/social-media/get/:id', asyncHandler(webController.getSocialMediaLin
 router.post('/social-media/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.createSocialMediaLink));
 router.patch('/social-media/update', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateSocialMediaLink));
 router.patch('/social-media/update/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateSocialMediaLink));
+router.delete('/social-media/delete', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSocialMediaLink));
 router.delete('/social-media/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSocialMediaLink));
 
 
