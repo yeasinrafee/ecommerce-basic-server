@@ -10,53 +10,53 @@ const router = Router();
 const upload = createUploadMiddleware({ maxFileSizeInMB: 5, maxFileCount: 1 });
 
 
-router.get('/get', asyncHandler(webController.getWeb));
+router.get('/company-information/get', asyncHandler(webController.getCompanyInformation));
 
 router.post(
-    '/create',
+    '/company-information/create',
     authenticate,
     authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
     upload.fields([{ name: 'logo', maxCount: 1 }]),
-    asyncHandler(webController.createWeb)
-);
-
-router.patch(
-    '/update',
-    authenticate,
-    authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
-    upload.fields([{ name: 'logo', maxCount: 1 }]),
-    asyncHandler(webController.updateWeb)
-);
-
-router.delete(
-    '/delete',
-    authenticate,
-    authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
-    asyncHandler(webController.deleteWeb)
-);
-
-
-router.get('/company-info/get', asyncHandler(webController.getCompanyInformation));
-
-router.post(
-    '/company-info/create',
-    authenticate,
-    authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
     asyncHandler(webController.createCompanyInformation)
 );
 
 router.patch(
-    '/company-info/update',
+    '/company-information/update',
     authenticate,
     authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
+    upload.fields([{ name: 'logo', maxCount: 1 }]),
     asyncHandler(webController.updateCompanyInformation)
 );
 
 router.delete(
-    '/company-info/delete',
+    '/company-information/delete',
     authenticate,
     authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
     asyncHandler(webController.deleteCompanyInformation)
+);
+
+
+router.get('/company-policy/get', asyncHandler(webController.getCompanyPolicy));
+
+router.post(
+    '/company-policy/create',
+    authenticate,
+    authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
+    asyncHandler(webController.createCompanyPolicy)
+);
+
+router.patch(
+    '/company-policy/update',
+    authenticate,
+    authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
+    asyncHandler(webController.updateCompanyPolicy)
+);
+
+router.delete(
+    '/company-policy/delete',
+    authenticate,
+    authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
+    asyncHandler(webController.deleteCompanyPolicy)
 );
 
 
@@ -70,7 +70,9 @@ router.delete('/faq/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, 
 router.get('/social-media/get-all', asyncHandler(webController.getSocialMediaLinks));
 router.get('/social-media/get/:id', asyncHandler(webController.getSocialMediaLink));
 router.post('/social-media/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.createSocialMediaLink));
+router.patch('/social-media/update', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateSocialMediaLink));
 router.patch('/social-media/update/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateSocialMediaLink));
+router.delete('/social-media/delete', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSocialMediaLink));
 router.delete('/social-media/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSocialMediaLink));
 
 

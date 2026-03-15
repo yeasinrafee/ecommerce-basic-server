@@ -1,19 +1,19 @@
 import { prisma } from '../../config/prisma.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { 
-    CreateWebDto, UpdateWebDto, CreateCompanyInformationDto, UpdateCompanyInformationDto, 
+    CreateCompanyInformationDto, UpdateCompanyInformationDto, CreateCompanyPolicyDto, UpdateCompanyPolicyDto, 
     CreateFaqDto, UpdateFaqDto, CreateSocialMediaLinkDto, UpdateSocialMediaLinkDto, 
     CreateSliderDto, UpdateSliderDto, CreateTestimonialDto, UpdateTestimonialDto 
 } from './web.types.js';
 import { deleteCloudinaryAsset, getPublicIdFromUrl } from '../../common/utils/file-upload.js';
 
-// --- Web ---
-const getWeb = async () => {
-    return prisma.web.findFirst();
+// --- Company Information ---
+const getCompanyInformation = async () => {
+    return prisma.companyInformation.findFirst();
 };
 
-const createOrUpdateWeb = async (payload: CreateWebDto, newlyUploadedPublicId?: string | null) => {
-    const existing = await prisma.web.findFirst();
+const createOrUpdateCompanyInformation = async (payload: CreateCompanyInformationDto, newlyUploadedPublicId?: string | null) => {
+    const existing = await prisma.companyInformation.findFirst();
 
     if (existing) {
         if (payload.logo && existing.logo) {
@@ -22,23 +22,23 @@ const createOrUpdateWeb = async (payload: CreateWebDto, newlyUploadedPublicId?: 
                 try {
                     await deleteCloudinaryAsset(previousPublicId);
                 } catch (err) {
-                    console.warn('Failed to delete old web logo asset', { previousPublicId, err: (err as Error).message });
+                    console.warn('Failed to delete old company information logo asset', { previousPublicId, err: (err as Error).message });
                 }
             }
         }
-        return prisma.web.update({
+        return prisma.companyInformation.update({
             where: { id: existing.id },
             data: payload
         });
     }
 
-    return prisma.web.create({ data: payload });
+    return prisma.companyInformation.create({ data: payload });
 };
 
-const updateWeb = async (payload: UpdateWebDto, newlyUploadedPublicId?: string | null) => {
-    const existing = await prisma.web.findFirst();
+const updateCompanyInformation = async (payload: UpdateCompanyInformationDto, newlyUploadedPublicId?: string | null) => {
+    const existing = await prisma.companyInformation.findFirst();
     if (!existing) {
-        throw new AppError(404, 'Web data not found', [{ message: 'No web data exists to update', code: 'NOT_FOUND' }]);
+        throw new AppError(404, 'Company information not found', [{ message: 'No company info exists to update', code: 'NOT_FOUND' }]);
     }
 
     if (payload.logo && existing.logo) {
@@ -47,59 +47,11 @@ const updateWeb = async (payload: UpdateWebDto, newlyUploadedPublicId?: string |
             try {
                 await deleteCloudinaryAsset(previousPublicId);
             } catch (err) {
-                console.warn('Failed to delete old web logo asset', { previousPublicId, err: (err as Error).message });
+                console.warn('Failed to delete old company information logo asset', { previousPublicId, err: (err as Error).message });
             }
         }
     }
 
-    return prisma.web.update({
-        where: { id: existing.id },
-        data: payload
-    });
-};
-
-const deleteWeb = async () => {
-    const existing = await prisma.web.findFirst();
-    if (!existing) {
-        throw new AppError(404, 'Web data not found', [{ message: 'No web data exists', code: 'NOT_FOUND' }]);
-    }
-
-    if (existing.logo) {
-        const previousPublicId = getPublicIdFromUrl(existing.logo);
-        if (previousPublicId) {
-            try {
-                await deleteCloudinaryAsset(previousPublicId);
-            } catch (err) {
-                console.warn('Failed to delete cloud asset before web removal', { previousPublicId, err: (err as Error).message });
-            }
-        }
-    }
-
-    await prisma.web.delete({ where: { id: existing.id } });
-    return true;
-};
-
-// --- Company Information ---
-const getCompanyInformation = async () => {
-    return prisma.companyInformation.findFirst();
-};
-
-const createOrUpdateCompanyInformation = async (payload: CreateCompanyInformationDto) => {
-    const existing = await prisma.companyInformation.findFirst();
-    if (existing) {
-        return prisma.companyInformation.update({
-            where: { id: existing.id },
-            data: payload
-        });
-    }
-    return prisma.companyInformation.create({ data: payload });
-};
-
-const updateCompanyInformation = async (payload: UpdateCompanyInformationDto) => {
-    const existing = await prisma.companyInformation.findFirst();
-    if (!existing) {
-        throw new AppError(404, 'Company information not found', [{ message: 'No company info exists to update', code: 'NOT_FOUND' }]);
-    }
     return prisma.companyInformation.update({
         where: { id: existing.id },
         data: payload
@@ -109,9 +61,57 @@ const updateCompanyInformation = async (payload: UpdateCompanyInformationDto) =>
 const deleteCompanyInformation = async () => {
     const existing = await prisma.companyInformation.findFirst();
     if (!existing) {
-        throw new AppError(404, 'Company information not found', [{ message: 'No company info exists', code: 'NOT_FOUND' }]);
+        throw new AppError(404, 'Company information not found', [{ message: 'No company info exists to delete', code: 'NOT_FOUND' }]);
     }
+
+    if (existing.logo) {
+        const previousPublicId = getPublicIdFromUrl(existing.logo);
+        if (previousPublicId) {
+            try {
+                await deleteCloudinaryAsset(previousPublicId);
+            } catch (err) {
+                console.warn('Failed to delete old company information image asset', { previousPublicId, err: (err as Error).message });
+            }
+        }
+    }
+
     await prisma.companyInformation.delete({ where: { id: existing.id } });
+    return true;
+};
+
+// --- Company Policy ---
+const getCompanyPolicy = async () => {
+    return prisma.companyPolicy.findFirst();
+};
+
+const createOrUpdateCompanyPolicy = async (payload: CreateCompanyPolicyDto) => {
+    const existing = await prisma.companyPolicy.findFirst();
+    if (existing) {
+        return prisma.companyPolicy.update({
+            where: { id: existing.id },
+            data: payload
+        });
+    }
+    return prisma.companyPolicy.create({ data: payload });
+};
+
+const updateCompanyPolicy = async (payload: UpdateCompanyPolicyDto) => {
+    const existing = await prisma.companyPolicy.findFirst();
+    if (!existing) {
+        throw new AppError(404, 'Company policy not found', [{ message: 'No company policy exists to update', code: 'NOT_FOUND' }]);
+    }
+    return prisma.companyPolicy.update({
+        where: { id: existing.id },
+        data: payload
+    });
+};
+
+const deleteCompanyPolicy = async () => {
+    const existing = await prisma.companyPolicy.findFirst();
+    if (!existing) {
+        throw new AppError(404, 'Company policy not found', [{ message: 'No company policy exists', code: 'NOT_FOUND' }]);
+    }
+    await prisma.companyPolicy.delete({ where: { id: existing.id } });
     return true;
 };
 
@@ -152,7 +152,14 @@ const updateSocialMediaLink = async (payload: UpdateSocialMediaLinkDto | UpdateS
 };
 const deleteSocialMediaLink = async (ids: string | string[]) => {
     const idArray = Array.isArray(ids) ? ids : [ids];
-    return prisma.socialMediaLink.deleteMany({ where: { id: { in: idArray } } });
+
+    // Use a transaction to ensure atomicity when deleting multiple records.
+    // This also makes it safe to add additional cleanup logic later.
+    const [result] = await prisma.$transaction([
+        prisma.socialMediaLink.deleteMany({ where: { id: { in: idArray } } })
+    ]);
+
+    return result;
 };
 
 // --- Slider ---
@@ -227,16 +234,16 @@ const deleteTestimonial = async (ids: string | string[]) => {
 };
 
 export const webService = {
-    getWeb,
-    createOrUpdateWeb,
-    updateWeb,
-    deleteWeb,
     getCompanyInformation,
     createOrUpdateCompanyInformation,
     updateCompanyInformation,
     deleteCompanyInformation,
+    getCompanyPolicy,
+    createOrUpdateCompanyPolicy,
+    updateCompanyPolicy,
+    deleteCompanyPolicy,
     getFaqs, getFaq, createFaq, updateFaq, deleteFaq,
     getSocialMediaLinks, getSocialMediaLink, createSocialMediaLink, updateSocialMediaLink, deleteSocialMediaLink,
     getSliders, getSlider, getSlidersByIds, createSlider, updateSlider, deleteSlider,
-    getTestimonials, getTestimonial, getTestimonialsByIds, createTestimonial, updateTestimonial, deleteTestimonial
+    getTestimonials, getTestimonialsByIds, getTestimonial, createTestimonial, updateTestimonial, deleteTestimonial
 };

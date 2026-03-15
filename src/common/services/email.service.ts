@@ -11,7 +11,7 @@ interface EmailOptions {
   attachments?: nodemailer.SendMailOptions['attachments'];
 }
 
-export const emailQueue = createQueue('emailQueue');
+export const emailQueue = createQueue('emailQueue', { verify: true });
 
 class EmailService {
   private transporter: nodemailer.Transporter;
@@ -68,7 +68,7 @@ class EmailService {
       for (let attempt = 1; attempt <= this.maxSendAttempts; attempt++) {
         try {
           const info = await this.transporter.sendMail(mailOptions);
-          console.log(`Email sent successfully to ${mailOptions.to}. MessageId: ${info.messageId}`);
+          // console.log(`Email sent successfully to ${mailOptions.to}. MessageId: ${info.messageId}`);
           return true;
         } catch (err) {
           lastErr = err;
@@ -248,7 +248,12 @@ class EmailService {
 
 export const emailService = new EmailService();
 
-export const emailWorker = createWorker('emailQueue', async (job: Job) => {
-  const data = job.data as EmailOptions;
-  await emailService.sendEmail(data);
-});
+export const emailWorker = createWorker(
+  'emailQueue',
+  async (job: Job) => {
+    const data = job.data as EmailOptions;
+    await emailService.sendEmail(data);
+  },
+  5,
+  { verify: true }
+);
