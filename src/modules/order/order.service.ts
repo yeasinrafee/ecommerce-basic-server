@@ -1,19 +1,21 @@
-import { prisma } from '../../config/prisma';
-import { AppError } from '../../common/errors/AppError';
+import { prisma } from '../../config/prisma.js';
+import { AppError } from '../../common/errors/app-error.js';
 import { DiscountType } from '@prisma/client';
-import { CreateOrderDto } from './order.types';
+import type { CreateOrderDto } from './order.types.js';
+import type { PrismaClient } from '@prisma/client';
+import { emailService } from '../../common/services/email.service.js';
 
 export const createOrderService = async (
   userId: string,
   data: CreateOrderDto
 ) => {
-  return await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$use' | '$extends'>) => {
     let customer = await tx.customer.findUnique({
       where: { userId },
     });
 
     if (!customer) {
-      throw new AppError('Customer not found for this user', 404);
+      throw new AppError(404, 'Customer not found for this user');
     }
 
     let finalAddressId = data.addressId;
@@ -24,7 +26,7 @@ export const createOrderService = async (
         where: { id: finalAddressId, customerId: customer.id },
       });
       if (!existingAddress) {
-        throw new AppError('Provided address not found or does not belong to the customer', 404);
+        throw new AppError(404, 'Provided address not found or does not belong to the customer');
       }
       zoneId = existingAddress.zoneId;
     } else if (data.address) {
@@ -40,18 +42,18 @@ export const createOrderService = async (
       finalAddressId = newAddress.id;
       zoneId = data.address.zoneId;
     } else {
-      throw new AppError('Either addressId or address must be provided', 400);
+      throw new AppError(400, 'Either addressId or address must be provided');
     }
 
     if (data.promoId) {
       const promo = await tx.promo.findUnique({ where: { id: data.promoId } });
       if (!promo) {
-        throw new AppError('Invalid promo code', 400);
+        throw new AppError(400, 'Invalid promo code');
       }
 
       const currentDate = new Date();
       if (currentDate < promo.startDate || currentDate > promo.endDate) {
-        throw new AppError('Promo code is expired or not yet active', 400);
+        throw new AppError(400, 'Promo code is expired or not yet active');
       }
 
       const pastUsages = await tx.order.count({
@@ -59,7 +61,7 @@ export const createOrderService = async (
       });
 
       if (pastUsages >= promo.numberOfUses) {
-        throw new AppError('Promo code usage limit exceeded for this customer', 400);
+        throw new AppError(400, 'Promo code usage limit exceeded for this customer');
       }
     }
 
@@ -74,11 +76,11 @@ export const createOrderService = async (
       });
 
       if (!product) {
-        throw new AppError(`Product with id ${item.productId} not found`, 404);
+        throw new AppError(404, `Product with id ${item.productId} not found`);
       }
 
       if (product.stock < item.quantity) {
-        throw new AppError(`Not enough stock for product ${product.name}`, 400);
+        throw new AppError(400, `Not enough stock for product ${product.name}`);
       }
 
       let finalPrice = product.Baseprice;
@@ -141,12 +143,12 @@ export const createOrderService = async (
       });
 
       if (updateResult.count === 0) {
-        throw new AppError(`Concurrency Error: Product ${product.name} does not have enough stock.`, 400);
+        throw new AppError(400, `Concurrency Error: Product ${product.name} does not have enough stock.`);
       }
     }
 
     let orderDiscountValue = 0;
-    let orderDiscountType = DiscountType.NONE;
+    let orderDiscountType: DiscountType = DiscountType.NONE;
 
     if (data.promoId) {
       const promo = await tx.promo.findUnique({ where: { id: data.promoId } });
@@ -167,7 +169,7 @@ export const createOrderService = async (
     });
 
     if (!zonePolicyLink || !zonePolicyLink.zonePolicy) {
-      throw new AppError('Shipping not available for the selected zone', 400);
+      throw new AppError(400, 'Shipping not available for the selected zone');
     }
 
     const baseShippingCharge = zonePolicyLink.zonePolicy.shippingCost;
@@ -247,4 +249,17 @@ export const createOrderService = async (
 
     return order;
   });
+
+  void emailService.queueEmail({
+    to: data.customerEmail || '',
+    subject: `Order Confirmation`,
+    html: `
+      <h2>Thank you for your order!</h2>
+      <p>Dear ${data.customerName},</p>
+      <p>Your order has been placed successfully.</p>
+      <p>We will notify you once it's on the way.</p>
+    `,
+  });
+
+  return result;
 };

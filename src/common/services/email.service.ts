@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import { env } from '../../config/env.js';
+import { createQueue, createWorker } from './mq.service.js';
+import type { Job } from 'bullmq';
 
 interface EmailOptions {
   to: string | string[];
@@ -8,6 +10,8 @@ interface EmailOptions {
   text?: string;
   attachments?: nodemailer.SendMailOptions['attachments'];
 }
+
+export const emailQueue = createQueue('emailQueue');
 
 class EmailService {
   private transporter: nodemailer.Transporter;
@@ -192,6 +196,10 @@ class EmailService {
     `;
   }
 
+  async queueEmail(options: EmailOptions): Promise<void> {
+    await emailQueue.add('sendEmail', options);
+  }
+
   async sendOtpEmail(to: string, otp: string, expiryMinutes?: number): Promise<boolean> {
     const minutes = typeof expiryMinutes === 'number' ? expiryMinutes : 15;
     const expiryDate = new Date(Date.now() + minutes * 60 * 1000);
@@ -239,3 +247,8 @@ class EmailService {
 }
 
 export const emailService = new EmailService();
+
+export const emailWorker = createWorker('emailQueue', async (job: Job) => {
+  const data = job.data as EmailOptions;
+  await emailService.sendEmail(data);
+});
