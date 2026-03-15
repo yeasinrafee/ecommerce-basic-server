@@ -160,7 +160,7 @@ const forgotPasswordSendOtp = async (req: Request, res: Response) => {
 		res,
 		statusCode: 200,
 		success: true,
-		message: 'Reset OTP sent successfully',
+		message: 'Reset OTP sent to your email. Please check your inbox.',
 		data: {
 			userId: data.userId,
 			otpExpiry: data.otpExpiry?.toISOString() ?? null
