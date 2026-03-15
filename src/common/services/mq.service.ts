@@ -6,6 +6,7 @@ const connectionOptions = {
   host: env.redisHost,
   port: env.redisPort,
   password: env.redisPassword,
+  db: env.redisDb,
   maxRetriesPerRequest: null,
 };
 

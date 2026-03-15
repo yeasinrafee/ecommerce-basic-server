@@ -84,9 +84,20 @@ const getCompanyPolicy = async () => {
     return prisma.companyPolicy.findFirst();
 };
 
-const createOrUpdateCompanyPolicy = async (payload: CreateCompanyPolicyDto) => {
+const createOrUpdateCompanyPolicy = async (payload: CreateCompanyPolicyDto, newlyUploadedPublicId?: string | null) => {
     const existing = await prisma.companyPolicy.findFirst();
+
     if (existing) {
+        if ((payload.sizeChart === "" || (payload.sizeChart && payload.sizeChart !== existing.sizeChart)) && existing.sizeChart) {
+            const previousPublicId = getPublicIdFromUrl(existing.sizeChart);
+            if (previousPublicId && previousPublicId !== newlyUploadedPublicId) {
+                try {
+                    await deleteCloudinaryAsset(previousPublicId);
+                } catch (err) {
+                    console.warn('Failed to delete old company policy size chart asset', { previousPublicId, err: (err as Error).message });
+                }
+            }
+        }
         return prisma.companyPolicy.update({
             where: { id: existing.id },
             data: payload
@@ -95,11 +106,24 @@ const createOrUpdateCompanyPolicy = async (payload: CreateCompanyPolicyDto) => {
     return prisma.companyPolicy.create({ data: payload });
 };
 
-const updateCompanyPolicy = async (payload: UpdateCompanyPolicyDto) => {
+const updateCompanyPolicy = async (payload: UpdateCompanyPolicyDto, newlyUploadedPublicId?: string | null) => {
     const existing = await prisma.companyPolicy.findFirst();
     if (!existing) {
         throw new AppError(404, 'Company policy not found', [{ message: 'No company policy exists to update', code: 'NOT_FOUND' }]);
     }
+
+    // Handle removal or replacement of sizeChart image
+    if ((payload.sizeChart === "" || (payload.sizeChart && payload.sizeChart !== existing.sizeChart)) && existing.sizeChart) {
+        const previousPublicId = getPublicIdFromUrl(existing.sizeChart);
+        if (previousPublicId && previousPublicId !== newlyUploadedPublicId) {
+            try {
+                await deleteCloudinaryAsset(previousPublicId);
+            } catch (err) {
+                console.warn('Failed to delete old company policy size chart asset', { previousPublicId, err: (err as Error).message });
+            }
+        }
+    }
+
     return prisma.companyPolicy.update({
         where: { id: existing.id },
         data: payload
@@ -111,6 +135,18 @@ const deleteCompanyPolicy = async () => {
     if (!existing) {
         throw new AppError(404, 'Company policy not found', [{ message: 'No company policy exists', code: 'NOT_FOUND' }]);
     }
+
+    if (existing.sizeChart) {
+        const previousPublicId = getPublicIdFromUrl(existing.sizeChart);
+        if (previousPublicId) {
+            try {
+                await deleteCloudinaryAsset(previousPublicId);
+            } catch (err) {
+                console.warn('Failed to delete company policy size chart asset on policy deletion', { previousPublicId, err: (err as Error).message });
+            }
+        }
+    }
+
     await prisma.companyPolicy.delete({ where: { id: existing.id } });
     return true;
 };
