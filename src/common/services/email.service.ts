@@ -68,7 +68,7 @@ class EmailService {
       for (let attempt = 1; attempt <= this.maxSendAttempts; attempt++) {
         try {
           const info = await this.transporter.sendMail(mailOptions);
-          console.log(`Email sent successfully to ${mailOptions.to}. MessageId: ${info.messageId}`);
+          // console.log(`Email sent successfully to ${mailOptions.to}. MessageId: ${info.messageId}`);
           return true;
         } catch (err) {
           lastErr = err;

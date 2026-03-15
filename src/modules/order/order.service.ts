@@ -4,6 +4,7 @@ import { DiscountType } from '@prisma/client';
 import type { CreateOrderDto } from './order.types.js';
 import type { PrismaClient } from '@prisma/client';
 import { emailService } from '../../common/services/email.service.js';
+import { orderEmailTemplates } from './order.email-templates.js';
 
 export const createOrderService = async (
   userId: string,
@@ -252,13 +253,8 @@ export const createOrderService = async (
 
   void emailService.queueEmail({
     to: data.customerEmail || '',
-    subject: `Order Confirmation`,
-    html: `
-      <h2>Thank you for your order!</h2>
-      <p>Dear ${data.customerName},</p>
-      <p>Your order has been placed successfully.</p>
-      <p>We will notify you once it's on the way.</p>
-    `,
+    subject: `Order Placed Successfully`,
+    html: orderEmailTemplates.orderPlaced(data.customerName, result.finalAmount),
   });
 
   return result;
