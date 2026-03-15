@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, CookieOptions } from 'express';
 import { env } from '../../config/env.js';
 import { AuthTokens } from './token.js';
 
@@ -26,11 +26,12 @@ const parseDuration = (value: string): number => {
 };
 
 export const setAuthCookies = (res: Response, tokens: AuthTokens) => {
-  const baseOpts = {
+  const baseOpts: CookieOptions = {
     httpOnly: true,
     secure: env.isProduction,
-    sameSite: 'lax' as const,
-    path: '/'
+    sameSite: env.isProduction ? 'strict' : 'lax',
+    path: '/',
+    domain: env.cookieDomain || undefined
   };
 
   res.cookie('accessToken', tokens.accessToken, {
@@ -44,11 +45,12 @@ export const setAuthCookies = (res: Response, tokens: AuthTokens) => {
 };
 
 export const clearAuthCookies = (res: Response) => {
-  const baseOpts = {
+  const baseOpts: CookieOptions = {
     httpOnly: true,
     secure: env.isProduction,
-    sameSite: 'lax' as const,
-    path: '/'
+    sameSite: env.isProduction ? 'strict' : 'lax',
+    path: '/',
+    domain: env.cookieDomain || undefined
   };
 
   res.clearCookie('accessToken', baseOpts);
