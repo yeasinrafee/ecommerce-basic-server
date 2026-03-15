@@ -70,7 +70,7 @@ router.delete('/faq/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, 
 router.get('/social-media/get-all', asyncHandler(webController.getSocialMediaLinks));
 router.get('/social-media/get/:id', asyncHandler(webController.getSocialMediaLink));
 router.post('/social-media/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.createSocialMediaLink));
-router.patch('/social-media/update/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateSocialMediaLink));
+router.patch('/social-media/update/:id?', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateSocialMediaLink));
 router.delete('/social-media/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSocialMediaLink));
 
 
