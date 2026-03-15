@@ -42,6 +42,7 @@ router.post(
     '/company-policy/create',
     authenticate,
     authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
+    upload.fields([{ name: 'sizeChart', maxCount: 1 }]),
     asyncHandler(webController.createCompanyPolicy)
 );
 
@@ -49,6 +50,7 @@ router.patch(
     '/company-policy/update',
     authenticate,
     authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
+    upload.fields([{ name: 'sizeChart', maxCount: 1 }]),
     asyncHandler(webController.updateCompanyPolicy)
 );
 

@@ -149,26 +149,87 @@ const getCompanyPolicy = async (req: Request, res: Response) => {
 
 const createCompanyPolicy = async (req: Request, res: Response) => {
     const payload = req.body || {};
-    const data = await webService.createOrUpdateCompanyPolicy(payload);
-    sendResponse({
-        res,
-        statusCode: 201,
-        success: true,
-        message: 'Company policy created/updated',
-        data
-    });
+    let newlyUploadedPublicId: string | null = null;
+    let sizeChartUrl: string | null | undefined = undefined;
+
+    try {
+        const files = normalizeUploadedFiles(req.files);
+        if (files.length > 0) {
+            const generatedId = crypto.randomUUID();
+            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
+                projectFolder: 'company-policy',
+                entityId: generatedId,
+                fileNamePrefix: 'size-chart'
+            });
+
+            const uploaded = uploadedFiles[0];
+            sizeChartUrl = uploaded?.secureUrl ?? null;
+            newlyUploadedPublicId = uploaded?.publicId ?? null;
+        }
+
+        if (sizeChartUrl !== undefined) {
+            payload.sizeChart = sizeChartUrl;
+        }
+
+        const data = await webService.createOrUpdateCompanyPolicy(payload, newlyUploadedPublicId);
+
+        sendResponse({
+            res,
+            statusCode: 201,
+            success: true,
+            message: 'Company policy created/updated',
+            data
+        });
+    } catch (err) {
+        if (newlyUploadedPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedPublicId);
+            } catch (cleanupErr) {
+                console.warn('Failed to cleanup uploaded size chart image', { newlyUploadedPublicId, err: (cleanupErr as Error).message });
+            }
+        }
+        throw err;
+    }
 };
 
 const updateCompanyPolicy = async (req: Request, res: Response) => {
     const payload = req.body || {};
-    const data = await webService.updateCompanyPolicy(payload);
-    sendResponse({
-        res,
-        statusCode: 200,
-        success: true,
-        message: 'Company policy updated',
-        data
-    });
+    let newlyUploadedPublicId: string | null = null;
+
+    try {
+        const files = normalizeUploadedFiles(req.files);
+        if (files.length > 0) {
+            const generatedId = crypto.randomUUID();
+            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
+                projectFolder: 'company-policy',
+                entityId: generatedId,
+                fileNamePrefix: 'size-chart'
+            });
+
+            const uploaded = uploadedFiles[0];
+            payload.sizeChart = uploaded?.secureUrl ?? null;
+            newlyUploadedPublicId = uploaded?.publicId ?? null;
+        }
+
+        const data = await webService.updateCompanyPolicy(payload, newlyUploadedPublicId);
+
+        sendResponse({
+            res,
+            statusCode: 200,
+            success: true,
+            message: 'Company policy updated',
+            data
+        });
+    } catch (err) {
+        if (newlyUploadedPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedPublicId);
+            } catch (cleanupErr) {
+                console.warn('Failed to cleanup uploaded size chart image after update failure', { newlyUploadedPublicId });
+            }
+        }
+        throw err;
+    }
 };
 
 const deleteCompanyPolicy = async (req: Request, res: Response) => {
