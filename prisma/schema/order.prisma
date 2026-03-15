@@ -1,43 +1,66 @@
-
 model Order {
-	id                  String   @id @default(uuid())
+    id String @id @default(uuid())
 
-	customer            Customer @relation(fields: [customerId], references: [id])
-	customerId          String
-	customerName        String
-	customerEmail       String
-	customerPhone       String?
+    customer      Customer @relation(fields: [customerId], references: [id])
+    customerId    String
+    customerName  String
+    customerEmail String?
+    customerPhone String?
 
-	address             Address  @relation(fields: [addressId], references: [id])
-	addressId           String
+    address   Address @relation(fields: [addressId], references: [id])
+    addressId String
 
-	baseAmount          Float
+    baseAmount Float
 
-	promo               Promo?   @relation(fields: [promoId], references: [id])
-	promoId             String?
+    promo   Promo?  @relation(fields: [promoId], references: [id])
+    promoId String?
 
-	discountAmount      Float    @default(0)
-	finalAmount         Float
+    discountType   DiscountType
+    discountValue  Float
+    discountAmount Float        @default(0)
+    finalAmount    Float
 
-	baseShippingCharge  Float    @default(0)
-	extraShippingCharge Float    @default(0)
-	finalShippingCharge Float    @default(0)
+    baseShippingCharge  Float       @default(0)
+    extraShippingCharge Float       @default(0)
+    finalShippingCharge Float       @default(0)
+    orderStatus         OrderStatus @default(PENDING)
 
-	tax                 Float    @default(0)
+    tax Float @default(0)
 
-	totalWeight         Float    @default(0)
-	totalVolume         Float    @default(0)
+    totalWeight Float? @default(0)
+    totalVolume Float? @default(0)
 
-	chargePerWeight     Float?
-	chargePerVolume     Float?
-	weightUnit          Float?
-	volumeUnit          Float?
+    chargePerWeight Float?
+    chargePerVolume Float?
+    weightUnit      Float?
+    volumeUnit      Float?
 
-	createdAt           DateTime @default(now())
-	updatedAt           DateTime @updatedAt
+    deliveryTime Float?
+    expectedDeliveryDate DateTime?
 
-	@@index([customerId])
-	@@index([addressId])
-	@@index([promoId])
+    createdAt  DateTime    @default(now())
+    updatedAt  DateTime    @updatedAt
+    orderItems OrderItem[]
+
+    @@index([customerId])
+    @@index([addressId])
+    @@index([promoId])
 }
 
+model OrderItem {
+    id            String        @id @default(uuid())
+    orderId       String
+    order         Order         @relation(fields: [orderId], references: [id])
+    productId     String
+    product       Product       @relation(fields: [productId], references: [id])
+    quantity      Int
+    Baseprice     Float
+    finalPrice    Float
+    discountType  DiscountType?
+    discountValue Float?
+    createdAt     DateTime      @default(now())
+    updatedAt     DateTime      @updatedAt
+
+    @@index([orderId])
+    @@index([productId])
+}
