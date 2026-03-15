@@ -27,114 +27,6 @@ const extractIds = (req: Request) => {
     return Array.isArray(ids) ? ids : (ids ? [ids] : []);
 };
 
-// --- Web ---
-const getWeb = async (req: Request, res: Response) => {
-    const web = await webService.getWeb();
-    sendResponse({
-        res,
-        statusCode: 200,
-        success: true,
-        message: 'Web data fetched',
-        data: web
-    });
-};
-
-const createWeb = async (req: Request, res: Response) => {
-    const payload = req.body || {};
-    let newlyUploadedPublicId: string | null = null;
-    let logoUrl: string | null | undefined = undefined;
-
-    try {
-        const files = normalizeUploadedFiles(req.files);
-        if (files.length > 0) {
-            const generatedId = crypto.randomUUID();
-            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
-                projectFolder: 'web',
-                entityId: generatedId,
-                fileNamePrefix: 'logo'
-            });
-
-            const uploaded = uploadedFiles[0];
-            logoUrl = uploaded?.secureUrl ?? null;
-            newlyUploadedPublicId = uploaded?.publicId ?? null;
-        }
-
-        if (logoUrl !== undefined) {
-            payload.logo = logoUrl;
-        }
-
-        const data = await webService.createOrUpdateWeb(payload, newlyUploadedPublicId);
-
-        sendResponse({
-            res,
-            statusCode: 201,
-            success: true,
-            message: 'Web data created/updated',
-            data
-        });
-    } catch (err) {
-        if (newlyUploadedPublicId) {
-            try {
-                await deleteCloudinaryAsset(newlyUploadedPublicId);
-            } catch (cleanupErr) {
-                console.warn('Failed to cleanup uploaded logo image', { newlyUploadedPublicId, err: (cleanupErr as Error).message });
-            }
-        }
-        throw err;
-    }
-};
-
-const updateWeb = async (req: Request, res: Response) => {
-    const payload = req.body || {};
-    let newlyUploadedPublicId: string | null = null;
-
-    try {
-        const files = normalizeUploadedFiles(req.files);
-        if (files.length > 0) {
-            const generatedId = crypto.randomUUID();
-            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
-                projectFolder: 'web',
-                entityId: generatedId,
-                fileNamePrefix: 'logo'
-            });
-
-            const uploaded = uploadedFiles[0];
-            payload.logo = uploaded?.secureUrl ?? null;
-            newlyUploadedPublicId = uploaded?.publicId ?? null;
-        }
-
-        const data = await webService.updateWeb(payload, newlyUploadedPublicId);
-
-        sendResponse({
-            res,
-            statusCode: 200,
-            success: true,
-            message: 'Web data updated',
-            data
-        });
-    } catch (err) {
-        if (newlyUploadedPublicId) {
-            try {
-                await deleteCloudinaryAsset(newlyUploadedPublicId);
-            } catch (cleanupErr) {
-                console.warn('Failed to cleanup uploaded logo image after update failure', { newlyUploadedPublicId });
-            }
-        }
-        throw err;
-    }
-};
-
-const deleteWeb = async (req: Request, res: Response) => {
-    await webService.deleteWeb();
-    sendResponse({
-        res,
-        statusCode: 200,
-        success: true,
-        message: 'Web data deleted',
-        data: null
-    });
-};
-
 // --- Company Information ---
 const getCompanyInformation = async (req: Request, res: Response) => {
     const info = await webService.getCompanyInformation();
@@ -149,26 +41,87 @@ const getCompanyInformation = async (req: Request, res: Response) => {
 
 const createCompanyInformation = async (req: Request, res: Response) => {
     const payload = req.body || {};
-    const data = await webService.createOrUpdateCompanyInformation(payload);
-    sendResponse({
-        res,
-        statusCode: 201,
-        success: true,
-        message: 'Company information created/updated',
-        data
-    });
+    let newlyUploadedPublicId: string | null = null;
+    let logoUrl: string | null | undefined = undefined;
+
+    try {
+        const files = normalizeUploadedFiles(req.files);
+        if (files.length > 0) {
+            const generatedId = crypto.randomUUID();
+            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
+                projectFolder: 'company-information',
+                entityId: generatedId,
+                fileNamePrefix: 'logo'
+            });
+
+            const uploaded = uploadedFiles[0];
+            logoUrl = uploaded?.secureUrl ?? null;
+            newlyUploadedPublicId = uploaded?.publicId ?? null;
+        }
+
+        if (logoUrl !== undefined) {
+            payload.logo = logoUrl;
+        }
+
+        const data = await webService.createOrUpdateCompanyInformation(payload, newlyUploadedPublicId);
+
+        sendResponse({
+            res,
+            statusCode: 201,
+            success: true,
+            message: 'Company information created/updated',
+            data
+        });
+    } catch (err) {
+        if (newlyUploadedPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedPublicId);
+            } catch (cleanupErr) {
+                console.warn('Failed to cleanup uploaded logo image', { newlyUploadedPublicId, err: (cleanupErr as Error).message });
+            }
+        }
+        throw err;
+    }
 };
 
 const updateCompanyInformation = async (req: Request, res: Response) => {
     const payload = req.body || {};
-    const data = await webService.updateCompanyInformation(payload);
-    sendResponse({
-        res,
-        statusCode: 200,
-        success: true,
-        message: 'Company information updated',
-        data
-    });
+    let newlyUploadedPublicId: string | null = null;
+
+    try {
+        const files = normalizeUploadedFiles(req.files);
+        if (files.length > 0) {
+            const generatedId = crypto.randomUUID();
+            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
+                projectFolder: 'company-information',
+                entityId: generatedId,
+                fileNamePrefix: 'logo'
+            });
+
+            const uploaded = uploadedFiles[0];
+            payload.logo = uploaded?.secureUrl ?? null;
+            newlyUploadedPublicId = uploaded?.publicId ?? null;
+        }
+
+        const data = await webService.updateCompanyInformation(payload, newlyUploadedPublicId);
+
+        sendResponse({
+            res,
+            statusCode: 200,
+            success: true,
+            message: 'Company information updated',
+            data
+        });
+    } catch (err) {
+        if (newlyUploadedPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedPublicId);
+            } catch (cleanupErr) {
+                console.warn('Failed to cleanup uploaded logo image after update failure', { newlyUploadedPublicId });
+            }
+        }
+        throw err;
+    }
 };
 
 const deleteCompanyInformation = async (req: Request, res: Response) => {
@@ -178,6 +131,53 @@ const deleteCompanyInformation = async (req: Request, res: Response) => {
         statusCode: 200,
         success: true,
         message: 'Company information deleted',
+        data: null
+    });
+};
+
+// --- Company Policy ---
+const getCompanyPolicy = async (req: Request, res: Response) => {
+    const policy = await webService.getCompanyPolicy();
+    sendResponse({
+        res,
+        statusCode: 200,
+        success: true,
+        message: 'Company policy fetched',
+        data: policy
+    });
+};
+
+const createCompanyPolicy = async (req: Request, res: Response) => {
+    const payload = req.body || {};
+    const data = await webService.createOrUpdateCompanyPolicy(payload);
+    sendResponse({
+        res,
+        statusCode: 201,
+        success: true,
+        message: 'Company policy created/updated',
+        data
+    });
+};
+
+const updateCompanyPolicy = async (req: Request, res: Response) => {
+    const payload = req.body || {};
+    const data = await webService.updateCompanyPolicy(payload);
+    sendResponse({
+        res,
+        statusCode: 200,
+        success: true,
+        message: 'Company policy updated',
+        data
+    });
+};
+
+const deleteCompanyPolicy = async (req: Request, res: Response) => {
+    await webService.deleteCompanyPolicy();
+    sendResponse({
+        res,
+        statusCode: 200,
+        success: true,
+        message: 'Company policy deleted',
         data: null
     });
 };
@@ -403,14 +403,14 @@ const deleteTestimonial = async (req: Request, res: Response) => {
 };
 
 export const webController = {
-    getWeb,
-    createWeb,
-    updateWeb,
-    deleteWeb,
     getCompanyInformation,
     createCompanyInformation,
     updateCompanyInformation,
     deleteCompanyInformation,
+    getCompanyPolicy,
+    createCompanyPolicy,
+    updateCompanyPolicy,
+    deleteCompanyPolicy,
     getFaqs, getFaq, createFaq, updateFaq, deleteFaq,
     getSocialMediaLinks, getSocialMediaLink, createSocialMediaLink, updateSocialMediaLink, deleteSocialMediaLink,
     getSliders, getSlider, createSlider, updateSlider, deleteSlider,

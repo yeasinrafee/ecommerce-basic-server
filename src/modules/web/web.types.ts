@@ -1,4 +1,4 @@
-export type CreateWebDto = {
+export type CreateCompanyInformationDto = {
     email?: string;
     address?: string;
     phone?: string;
@@ -7,9 +7,9 @@ export type CreateWebDto = {
     logo?: string | null;
 };
 
-export type UpdateWebDto = Partial<CreateWebDto>;
+export type UpdateCompanyInformationDto = Partial<CreateCompanyInformationDto>;
 
-export type CreateCompanyInformationDto = {
+export type CreateCompanyPolicyDto = {
     termsOfService?: string;
     termsAndConditions?: string;
     privacyPolicy?: string;
@@ -18,7 +18,7 @@ export type CreateCompanyInformationDto = {
     sizeChart?: string;
 };
 
-export type UpdateCompanyInformationDto = Partial<CreateCompanyInformationDto>;
+export type UpdateCompanyPolicyDto = Partial<CreateCompanyPolicyDto>;
 
 export type CreateFaqDto = {
     question: string;

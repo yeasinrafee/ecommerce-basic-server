@@ -1,4 +1,4 @@
-model Web {
+model CompanyInformation {
     id               String   @id @default(uuid())
     logo             String?
     email            String?
@@ -10,7 +10,7 @@ model Web {
     updatedAt        DateTime @updatedAt
 }
 
-model CompanyInformation {
+model CompanyPolicy {
     id                 String   @id @default(uuid())
     termsOfService     String?
     termsAndConditions String?
