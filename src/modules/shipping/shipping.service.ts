@@ -37,7 +37,6 @@ const createShipping = async (dto: CreateShippingDto) => {
     data: {
       minimumFreeShippingAmount: dto.minimumFreeShippingAmount,
       tax: dto.tax,
-      defaultShippingCharge: dto.defaultShippingCharge,
       maximumWeight: dto.maximumWeight ?? null,
       // store computed volume if dimensions present, otherwise fall back to any explicit maximumVolume
       maximumVolume: computedVolume ?? (dto as any).maximumVolume ?? null,
@@ -77,6 +76,11 @@ const updateShipping = async (id: string, payload: UpdateShippingDto) => {
 
   if (hasDimensions) {
     dataToUpdate.maximumVolume = Number(length) * Number(width) * Number(height);
+  }
+
+  // Ensure removed/deprecated fields aren't passed to Prisma (field removed from schema)
+  if (Object.prototype.hasOwnProperty.call(dataToUpdate, 'defaultShippingCharge')) {
+    delete (dataToUpdate as any).defaultShippingCharge;
   }
 
   // Remove undefined keys so Prisma doesn't try to set undefined values. Keep nulls.
