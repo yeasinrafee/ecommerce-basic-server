@@ -4,6 +4,7 @@ import { sendResponse } from '../../common/utils/send-response.js';
 import { normalizeUploadedFiles } from '../../common/utils/file-upload.js';
 import { setAuthCookies, clearAuthCookies } from '../../common/utils/cookie.js';
 import { authService } from './auth.service.js';
+import { prisma } from '../../config/prisma.js';
 import {
 	validateCreateAdminPayload,
 	validateLoginPayload,
@@ -206,6 +207,44 @@ const resetPassword = async (req: Request, res: Response) => {
 	});
 };
 
+const getCustomerMe = async (req: Request, res: Response) => {
+	const userId = req.user?.id;
+	if (!userId) {
+		throw new AppError(401, 'Unauthorized');
+	}
+
+	const user = await prisma.user.findUnique({
+		where: { id: userId },
+		select: {
+			id: true,
+			email: true,
+			role: true,
+			verified: true,
+			createdAt: true,
+			updatedAt: true
+		}
+	});
+
+	if (!user) {
+		throw new AppError(404, 'User not found');
+	}
+
+	const customer = await prisma.customer.findUnique({
+		where: { userId },
+		include: { addresses: true }
+	});
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'Customer retrieved',
+		data: { user, customer },
+		errors: [],
+		meta: { timestamp: new Date().toISOString() }
+	});
+};
+
 export const authController = {
 	registerCustomer,
 	createAdmin,
@@ -217,4 +256,5 @@ export const authController = {
 	forgotPasswordSendOtp,
 	forgotPasswordVerifyOtp,
 	resetPassword
+	 ,getCustomerMe
 };

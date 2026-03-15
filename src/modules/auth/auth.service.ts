@@ -274,6 +274,8 @@ const login = async (payload: LoginInput): Promise<AuthResult> => {
   }
 
   const name = admin?.name || user.email.split("@")[0];
+  const image = customer?.image ?? admin?.image ?? null;
+  const status = admin ? admin.status : null;
 
   const tokens = generateAuthTokens({
     id: user.id,
@@ -288,9 +290,9 @@ const login = async (payload: LoginInput): Promise<AuthResult> => {
       email: user.email,
       role: user.role,
       name: name,
-      phone: customer?.phone || null,
-      image: admin?.image || null,
-      status: admin?.status || "ACTIVE",
+      phone: customer?.phone ?? null,
+      image,
+      status,
     },
     tokens,
   };
@@ -354,6 +356,8 @@ const verifyOtp = async (payload: VerifyOtpInput): Promise<AuthResult> => {
   const customer = await prisma.customer.findUnique({ where: { userId: user.id } });
 
   const name = admin?.name || user.email.split('@')[0];
+  const image = customer?.image ?? admin?.image ?? null;
+  const status = admin ? admin.status : null;
 
   const tokens = generateAuthTokens({
     id: user.id,
@@ -368,9 +372,9 @@ const verifyOtp = async (payload: VerifyOtpInput): Promise<AuthResult> => {
       email: user.email,
       role: user.role,
       name,
-      phone: customer?.phone || null,
-      image: admin?.image || null,
-      status: admin?.status || 'ACTIVE',
+      phone: customer?.phone ?? null,
+      image,
+      status,
     },
     tokens,
   };

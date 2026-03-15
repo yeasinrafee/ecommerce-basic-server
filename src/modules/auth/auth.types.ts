@@ -152,7 +152,7 @@ export type AdminUserShape = {
 	role: Role;
 	name: string;
 	image: string | null;
-	status: 'ACTIVE' | 'INACTIVE';
+	status: 'ACTIVE' | 'INACTIVE' | null;
 	otpExpiry?: string | null;
 };
 

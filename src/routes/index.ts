@@ -17,6 +17,7 @@ import { webRoutes } from '../modules/web/web.route.js';
 import { promoRoutes } from '../modules/promo/promo.route.js';
 import { wishlistRoutes } from '../modules/wishlist/wishlist.route.js';
 import { reviewRoutes } from '../modules/review/review.route.js';
+import { orderRoutes } from '../modules/order/order.route.js';
 
 const router = Router();
 
@@ -38,5 +39,6 @@ router.use('/web', webRoutes);
 router.use('/promos', promoRoutes);
 router.use('/wishlists', wishlistRoutes);
 router.use('/reviews', reviewRoutes);
+router.use('/orders', orderRoutes);
 
 export const apiRoutes = router;

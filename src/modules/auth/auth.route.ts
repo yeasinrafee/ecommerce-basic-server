@@ -24,6 +24,8 @@ router.post(
 
 router.post("/register", asyncHandler(authController.registerCustomer));
 
+router.get('/customer/me', authenticate, authorizeRoles(Role.CUSTOMER), asyncHandler(authController.getCustomerMe));
+
 router.post("/login", asyncHandler(authController.login));
 
 router.post("/refresh", asyncHandler(authController.refreshToken));
