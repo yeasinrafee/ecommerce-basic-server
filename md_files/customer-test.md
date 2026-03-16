@@ -162,3 +162,5 @@ Since passwords are stored in the `User` model, this flow works for both Admins 
 }
 ```
 
+GET /api/product/get-all?page=1&limit=20&searchTerm=phone&category=electronics&smartphones&brand=apple&samsung&minPrice=500&maxPrice=1500
+

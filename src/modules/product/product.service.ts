@@ -3,7 +3,7 @@ import toSlug from '../../common/utils/slug.js';
 import { toUpperUnderscore } from '../../common/utils/format.js';
 import { AppError } from '../../common/errors/app-error.js';
 import type { Prisma } from '@prisma/client';
-import type { CreateProductDto, UpdateProductDto, PatchProductDto, BulkPatchProductDto } from './product.types.js';
+import type { CreateProductDto, UpdateProductDto, PatchProductDto, BulkPatchProductDto, ProductListQuery } from './product.types.js';
 
 const generateUniqueSlugTx = async (tx: Prisma.TransactionClient, name: string) => {
 	const base = toSlug(name);
@@ -207,28 +207,129 @@ const createProduct = async (payload: CreateProductDto) => {
 	});
 };
 
-const getProducts = async ({ page = 1, limit = 20 }: { page?: number; limit?: number }) => {
+const getProducts = async ({
+	page = 1,
+	limit = 20,
+	searchTerm,
+	category,
+	brand,
+	minPrice,
+	maxPrice
+}: ProductListQuery = {}) => {
 	const skip = (page - 1) * limit;
+
+	const where: Prisma.ProductWhereInput = {};
+
+	if (searchTerm) {
+		where.name = { contains: searchTerm, mode: 'insensitive' };
+	}
+
+	if (category) {
+		const categories = Array.isArray(category) ? category : category.split('&');
+		where.categories = {
+			some: {
+				category: {
+					slug: { in: categories }
+				}
+			}
+		};
+	}
+
+	if (brand) {
+		const brands = Array.isArray(brand) ? brand : brand.split('&');
+		where.brand = {
+			slug: { in: brands }
+		};
+	}
+
+	if (minPrice !== undefined || maxPrice !== undefined) {
+		where.finalPrice = {};
+		if (minPrice !== undefined) {
+			where.finalPrice.gte = minPrice;
+		}
+		if (maxPrice !== undefined) {
+			where.finalPrice.lte = maxPrice;
+		}
+	}
+
 	const [data, total] = await Promise.all([
 		prisma.product.findMany({
- 			skip,
- 			take: limit,
- 			orderBy: { createdAt: 'desc' },
- 			include: {
- 				brand: true,
- 				categories: { include: { category: true } },
- 				tags: { include: { tag: true } },
- 				additionalInformations: true,
- 				seos: true,
- 				productVariations: { include: { attribute: true } }
- 			}
- 		}),
- 		prisma.product.count()
- 	]);
+			where,
+			skip,
+			take: limit,
+			orderBy: { createdAt: 'desc' },
+			include: {
+				brand: true,
+				categories: { include: { category: true } },
+				tags: { include: { tag: true } },
+				additionalInformations: true,
+				seos: true,
+				productVariations: { include: { attribute: true } },
+				productReviews: { include: { user: true } }
+			}
+		}),
+		prisma.product.count({ where })
+	]);
 
-	const meta = { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) };
+	const meta = {
+		page,
+		limit,
+		total,
+		totalPages: Math.max(1, Math.ceil(total / limit))
+	};
 
 	return { data, meta };
+};
+
+const getProductsLimited = async ({ count = 10, searchTerm, category, brand, minPrice, maxPrice }: { count?: number; searchTerm?: string; category?: string | string[]; brand?: string | string[]; minPrice?: number; maxPrice?: number } = {}) => {
+	const where: Prisma.ProductWhereInput = {};
+
+	if (searchTerm) {
+		where.name = { contains: searchTerm, mode: 'insensitive' };
+	}
+
+	if (category) {
+		const categories = Array.isArray(category) ? category : String(category).split('&');
+		where.categories = {
+			some: {
+				category: {
+					slug: { in: categories }
+				}
+			}
+		};
+	}
+
+	if (brand) {
+		const brands = Array.isArray(brand) ? brand : String(brand).split('&');
+		where.brand = {
+			slug: { in: brands }
+		};
+	}
+
+	if (minPrice !== undefined || maxPrice !== undefined) {
+		where.finalPrice = {};
+		if (minPrice !== undefined) {
+			where.finalPrice.gte = minPrice;
+		}
+		if (maxPrice !== undefined) {
+			where.finalPrice.lte = maxPrice;
+		}
+	}
+
+	return prisma.product.findMany({
+		where,
+		take: count,
+		orderBy: { createdAt: 'desc' },
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { include: { attribute: true } },
+			productReviews: { include: { user: true } }
+		}
+	});
 };
 
 const getAllProducts = async () => {
@@ -286,9 +387,45 @@ const getProductById = async (id: string) => {
  	});
 };
 
+const getHotDeals = async (count: number = 10) => {
+	return prisma.product.findMany({
+		where: {
+			discountType: { not: 'NONE' },
+			discountValue: { not: null }
+		},
+		take: count,
+		orderBy: { discountValue: 'desc' },
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { include: { attribute: true } },
+			productReviews: { include: { user: true } }
+		}
+	});
+};
+
+const getNewArrivals = async (count: number = 10) => {
+	return prisma.product.findMany({
+		take: count,
+		orderBy: { createdAt: 'desc' },
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { include: { attribute: true } },
+			productReviews: { include: { user: true } }
+		}
+	});
+};
+
 const deleteProduct = async (id: string) => {
- 	return prisma.$transaction(async (tx) => {
- 		await tx.productVariation.deleteMany({ where: { productId: id } });
+	return prisma.$transaction(async (tx) => {
+		await tx.productVariation.deleteMany({ where: { productId: id } });
  		await tx.categoriesOnProducts.deleteMany({ where: { productId: id } });
  		await tx.tagsOnProducts.deleteMany({ where: { productId: id } });
  		await tx.additionalInformation.deleteMany({ where: { productId: id } });
@@ -520,8 +657,9 @@ const bulkPatchProducts = async (payload: BulkPatchProductDto) => {
 
 export const productService = {
  	createProduct,
-	getProducts,
-	getAllProducts,
+    getProducts,
+    getProductsLimited,
+    getAllProducts,
 	getProductById,
 	deleteProduct,
 	updateProduct,
