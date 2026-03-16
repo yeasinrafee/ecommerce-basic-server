@@ -221,7 +221,10 @@ const getProducts = async ({
 	const where: Prisma.ProductWhereInput = {};
 
 	if (searchTerm) {
-		where.name = { contains: searchTerm, mode: 'insensitive' };
+		where.OR = [
+			{ name: { contains: searchTerm, mode: 'insensitive' } },
+			{ sku: { contains: searchTerm, mode: 'insensitive' } }
+		];
 	}
 
 	if (category) {
@@ -285,7 +288,10 @@ const getProductsLimited = async ({ count = 10, searchTerm, category, brand, min
 	const where: Prisma.ProductWhereInput = {};
 
 	if (searchTerm) {
-		where.name = { contains: searchTerm, mode: 'insensitive' };
+		where.OR = [
+			{ name: { contains: searchTerm, mode: 'insensitive' } },
+			{ sku: { contains: searchTerm, mode: 'insensitive' } }
+		];
 	}
 
 	if (category) {
