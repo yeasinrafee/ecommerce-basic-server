@@ -281,6 +281,57 @@ const getProducts = async ({
 	return { data, meta };
 };
 
+const getProductsLimited = async ({ count = 10, searchTerm, category, brand, minPrice, maxPrice }: { count?: number; searchTerm?: string; category?: string | string[]; brand?: string | string[]; minPrice?: number; maxPrice?: number } = {}) => {
+	const where: Prisma.ProductWhereInput = {};
+
+	if (searchTerm) {
+		where.name = { contains: searchTerm, mode: 'insensitive' };
+	}
+
+	if (category) {
+		const categories = Array.isArray(category) ? category : String(category).split('&');
+		where.categories = {
+			some: {
+				category: {
+					slug: { in: categories }
+				}
+			}
+		};
+	}
+
+	if (brand) {
+		const brands = Array.isArray(brand) ? brand : String(brand).split('&');
+		where.brand = {
+			slug: { in: brands }
+		};
+	}
+
+	if (minPrice !== undefined || maxPrice !== undefined) {
+		where.finalPrice = {};
+		if (minPrice !== undefined) {
+			where.finalPrice.gte = minPrice;
+		}
+		if (maxPrice !== undefined) {
+			where.finalPrice.lte = maxPrice;
+		}
+	}
+
+	return prisma.product.findMany({
+		where,
+		take: count,
+		orderBy: { createdAt: 'desc' },
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { include: { attribute: true } },
+			productReviews: { include: { user: true } }
+		}
+	});
+};
+
 const getAllProducts = async () => {
  	return prisma.product.findMany({
  		orderBy: { createdAt: 'desc' },
@@ -336,9 +387,45 @@ const getProductById = async (id: string) => {
  	});
 };
 
+const getHotDeals = async (count: number = 10) => {
+	return prisma.product.findMany({
+		where: {
+			discountType: { not: 'NONE' },
+			discountValue: { not: null }
+		},
+		take: count,
+		orderBy: { discountValue: 'desc' },
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { include: { attribute: true } },
+			productReviews: { include: { user: true } }
+		}
+	});
+};
+
+const getNewArrivals = async (count: number = 10) => {
+	return prisma.product.findMany({
+		take: count,
+		orderBy: { createdAt: 'desc' },
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { include: { attribute: true } },
+			productReviews: { include: { user: true } }
+		}
+	});
+};
+
 const deleteProduct = async (id: string) => {
- 	return prisma.$transaction(async (tx) => {
- 		await tx.productVariation.deleteMany({ where: { productId: id } });
+	return prisma.$transaction(async (tx) => {
+		await tx.productVariation.deleteMany({ where: { productId: id } });
  		await tx.categoriesOnProducts.deleteMany({ where: { productId: id } });
  		await tx.tagsOnProducts.deleteMany({ where: { productId: id } });
  		await tx.additionalInformation.deleteMany({ where: { productId: id } });
@@ -570,8 +657,9 @@ const bulkPatchProducts = async (payload: BulkPatchProductDto) => {
 
 export const productService = {
  	createProduct,
-	getProducts,
-	getAllProducts,
+    getProducts,
+    getProductsLimited,
+    getAllProducts,
 	getProductById,
 	deleteProduct,
 	updateProduct,

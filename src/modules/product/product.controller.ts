@@ -327,6 +327,26 @@ const getProducts = async (req: Request, res: Response) => {
 	});
 };
 
+const getProductsLimited = async (req: Request, res: Response) => {
+	const count = Math.max(1, Number(req.query.count ?? 10));
+	const searchTerm = req.query.searchTerm ? String(req.query.searchTerm) : undefined;
+	const category = req.query.category ? (Array.isArray(req.query.category) ? req.query.category as string[] : String(req.query.category)) : undefined;
+	const brand = req.query.brand ? (Array.isArray(req.query.brand) ? req.query.brand as string[] : String(req.query.brand)) : undefined;
+	const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined;
+	const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
+
+	const data = await productService.getProductsLimited({
+		count,
+		searchTerm,
+		category,
+		brand,
+		minPrice,
+		maxPrice
+	});
+
+	sendResponse({ res, statusCode: 200, success: true, message: 'Products retrieved', data });
+};
+
 const getAllProducts = async (req: Request, res: Response) => {
 	const data = await productService.getAllProducts();
 	sendResponse({ res, statusCode: 200, success: true, message: 'All products retrieved', data });
@@ -340,6 +360,18 @@ if (!product) {
 }
 
 	sendResponse({ res, statusCode: 200, success: true, message: 'Product retrieved', data: product });
+};
+
+const getHotDeals = async (req: Request, res: Response) => {
+	const count = req.query.count ? Number(req.query.count) : 10;
+	const products = await productService.getHotDeals(count);
+	sendResponse({ res, statusCode: 200, success: true, message: 'Hot deals retrieved', data: products });
+};
+
+const getNewArrivals = async (req: Request, res: Response) => {
+	const count = req.query.count ? Number(req.query.count) : 10;
+	const products = await productService.getNewArrivals(count);
+	sendResponse({ res, statusCode: 200, success: true, message: 'New arrivals retrieved', data: products });
 };
 
 const deleteProduct = async (req: Request, res: Response) => {
@@ -657,10 +689,13 @@ const patchProduct = async (req: Request, res: Response) => {
 export const productController = {
  	createProduct,
 	getProducts,
-	getAllProducts,
-	getProductById,
-	deleteProduct,
-	updateProduct,
-	patchProduct,
-	bulkPatchProducts
+ 	getProductsLimited,
+ 	getAllProducts,
+ 	getHotDeals,
+ 	getNewArrivals,
+ 	getProductById,
+ 	deleteProduct,
+ 	updateProduct,
+ 	patchProduct,
+ 	bulkPatchProducts
 };
