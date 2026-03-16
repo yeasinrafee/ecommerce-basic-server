@@ -22,8 +22,8 @@ const getPayloadArray = (req: Request) => {
 };
 
 const extractIds = (req: Request) => {
-    let ids = req.body.ids;
-    if (!ids && req.params.id) return [req.params.id];
+    const ids = (req.body as any)?.ids;
+    if ((!ids || ids.length === 0) && req.params.id) return Array.isArray(req.params.id) ? req.params.id : [req.params.id];
     return Array.isArray(ids) ? ids : (ids ? [ids] : []);
 };
 
