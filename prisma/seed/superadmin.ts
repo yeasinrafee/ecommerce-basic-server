@@ -27,6 +27,7 @@ async function main() {
       userId: user.id,
       name: NAME,
       image: null,
+      status: "ACTIVE",
     },
   });
 
