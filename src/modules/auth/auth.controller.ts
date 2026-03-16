@@ -209,11 +209,11 @@ const resetPassword = async (req: Request, res: Response) => {
 
 const getCustomerMe = async (req: Request, res: Response) => {
 	const userId = req.user?.id;
-	if (!userId) {
-		throw new AppError(401, 'Unauthorized');
-	}
+ 	if (!userId) {
+ 		throw new AppError(401, 'Unauthorized');
+ 	}
 
-	const user = await prisma.user.findUnique({
+	const userRecord = await prisma.user.findUnique({
 		where: { id: userId },
 		select: {
 			id: true,
@@ -225,21 +225,35 @@ const getCustomerMe = async (req: Request, res: Response) => {
 		}
 	});
 
-	if (!user) {
+	if (!userRecord) {
 		throw new AppError(404, 'User not found');
 	}
 
-	const customer = await prisma.customer.findUnique({
-		where: { userId },
-		include: { addresses: true }
-	});
+	const customer = await prisma.customer.findUnique({ where: { userId }, include: { addresses: true } });
+	const admin = await prisma.admin.findUnique({ where: { userId } });
+
+	const name = admin?.name || userRecord.email.split('@')[0];
+	const image = customer?.image ?? admin?.image ?? null;
+	const status = admin ? admin.status : customer ? customer.status : null;
+
+	const payload = {
+		id: userRecord.id,
+		email: userRecord.email,
+		role: userRecord.role,
+		name,
+		phone: customer?.phone ?? null,
+		image,
+		status,
+		user: userRecord,
+		customer: customer ?? null
+	};
 
 	sendResponse({
 		res,
 		statusCode: 200,
 		success: true,
 		message: 'Customer retrieved',
-		data: { user, customer },
+		data: payload,
 		errors: [],
 		meta: { timestamp: new Date().toISOString() }
 	});
