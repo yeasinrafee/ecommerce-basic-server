@@ -28,7 +28,7 @@ router.patch(
 router.patch('/bulk/fields', asyncHandler(productController.bulkPatchProducts));
 router.patch('/:id/fields', asyncHandler(productController.patchProduct));
 
-router.get('/', asyncHandler(productController.getProducts));
+router.get('/get-all', asyncHandler(productController.getProducts));
 router.get('/all', asyncHandler(productController.getAllProducts));
 router.get('/:id', asyncHandler(productController.getProductById));
 router.delete('/:id', asyncHandler(productController.deleteProduct));

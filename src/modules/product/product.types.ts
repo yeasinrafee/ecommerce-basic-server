@@ -99,3 +99,13 @@ export type BulkPatchProductDto = {
 	status?: Status;
 	stockStatus?: StockStatus;
 };
+
+export type ProductListQuery = {
+	page?: number;
+	limit?: number;
+	searchTerm?: string;
+	category?: string | string[];
+	brand?: string | string[];
+	minPrice?: number;
+	maxPrice?: number;
+};
