@@ -12,7 +12,7 @@ router.get('/get-all-paginated', asyncHandler(wishlistController.getWishlistsPag
 router.get('/get-all', asyncHandler(wishlistController.getAllWishlists));
 router.get('/get/:id', asyncHandler(wishlistController.getWishlist));
 router.patch('/update/:id', asyncHandler(wishlistController.updateWishlist));
-router.patch('/add-to-cart/:id', asyncHandler(wishlistController.addToCart));
+router.patch('/transfer-to-cart/:id', asyncHandler(wishlistController.transferToCart));
 router.delete('/delete-batch', asyncHandler(wishlistController.deleteWishlist));
 router.delete('/delete/:id', asyncHandler(wishlistController.deleteWishlistByParamId));
 

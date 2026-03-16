@@ -66,7 +66,7 @@ const deleteWishlistByParamId = async (req: Request, res: Response) => {
     sendResponse({ res, statusCode: 200, success: true, message: 'Wishlist item deleted', data: null });
 };
 
-const addToCart = async (req: Request, res: Response) => {
+const transferToCart = async (req: Request, res: Response) => {
     let productIds = req.body.productIds || req.body.productId;
     if (!productIds && req.params.id) {
         productIds = [req.params.id];
@@ -76,8 +76,8 @@ const addToCart = async (req: Request, res: Response) => {
         throw new AppError(400, 'Product IDs are required', [{ message: 'Missing product ID(s)', code: 'MISSING_DATA' }]);
     }
 
-    const data = await wishlistService.addToCart(req.user!.id, productIds);
-    sendResponse({ res, statusCode: 200, success: true, message: 'Wishlist items added to cart', data });
+    const data = await wishlistService.transferToCart(req.user!.id, productIds);
+    sendResponse({ res, statusCode: 200, success: true, message: 'Wishlist items transferred to cart', data });
 };
 
 export const wishlistController = {
@@ -87,5 +87,5 @@ export const wishlistController = {
     updateWishlist,
     deleteWishlist,
     deleteWishlistByParamId,
-    addToCart
+    transferToCart
 };
