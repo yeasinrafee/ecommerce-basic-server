@@ -657,10 +657,12 @@ const bulkPatchProducts = async (payload: BulkPatchProductDto) => {
 
 export const productService = {
  	createProduct,
-    getProducts,
-    getProductsLimited,
-    getAllProducts,
+	getProducts,
+	getProductsLimited,
+	getAllProducts,
 	getProductById,
+	getHotDeals,
+	getNewArrivals,
 	deleteProduct,
 	updateProduct,
 	patchProduct,
