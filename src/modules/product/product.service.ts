@@ -32,6 +32,19 @@ const calculateFinalPrice = (basePrice: number, discountType: CreateProductDto['
 	}
 };
 
+const parseVariantPrice = (val: unknown, fallback: number) => {
+	if (val === null || val === undefined) return fallback;
+	if (typeof val === 'number' && Number.isFinite(val)) return val;
+	if (typeof val === 'string') {
+ 		const t = val.trim();
+ 		if (t === '') return fallback;
+ 		const n = Number(t);
+ 		return Number.isFinite(n) ? n : fallback;
+ 	}
+
+	return fallback;
+};
+
 const createProduct = async (payload: CreateProductDto) => {
 	return prisma.$transaction(async (tx) => {
 		const brand = await tx.brand.findUnique({ where: { id: payload.brandId }, select: { id: true } });
@@ -157,7 +170,7 @@ const createProduct = async (payload: CreateProductDto) => {
 				const normalizedName = toUpperUnderscore(attribute.name);
 				const attributeId = attributeMap.get(normalizedName) as string;
 				return attribute.pairs.map((pair) => {
-					const basePrice = pair.price ?? payload.basePrice;
+					const basePrice = parseVariantPrice((pair as any).price, payload.basePrice);
 					const finalPrice = calculateFinalPrice(basePrice, payload.discountType, payload.discountValue);
 					return {
 						productId: created.id,
@@ -165,7 +178,7 @@ const createProduct = async (payload: CreateProductDto) => {
 						attributeValue: pair.value,
 						basePrice,
 						finalPrice,
-						galleryImage: pair.galleryImage ?? null
+						galleryImage: (pair as any).galleryImage ?? null
 					};
 				});
 			});
@@ -587,26 +600,30 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 			});
 		}
 
-		if (payload.attributes.length > 0) {
-			await tx.productVariation.deleteMany({ where: { productId: id } });
-			const variations = payload.attributes.flatMap((attribute) => {
-				const normalizedName = toUpperUnderscore(attribute.name);
-				const attributeId = attributeMap.get(normalizedName) as string;
-				return attribute.pairs.map((pair) => {
-					const basePrice = pair.price ?? payload.basePrice;
-					const finalPrice = calculateFinalPrice(basePrice, payload.discountType, payload.discountValue);
-					return {
-						productId: id,
-						attributeId,
-						attributeValue: pair.value,
-						basePrice,
-						finalPrice,
-						galleryImage: pair.galleryImage ?? null
-					};
+		if (Array.isArray(payload.attributes)) {
+			if (payload.attributes.length > 0) {
+				await tx.productVariation.deleteMany({ where: { productId: id } });
+				const variations = payload.attributes.flatMap((attribute) => {
+					const normalizedName = toUpperUnderscore(attribute.name);
+					const attributeId = attributeMap.get(normalizedName) as string;
+					return attribute.pairs.map((pair) => {
+						const basePrice = parseVariantPrice((pair as any).price, payload.basePrice);
+						const finalPrice = calculateFinalPrice(basePrice, payload.discountType, payload.discountValue);
+						return {
+							productId: id,
+							attributeId,
+							attributeValue: pair.value,
+							basePrice,
+							finalPrice,
+							galleryImage: (pair as any).galleryImage ?? null
+						};
+					});
 				});
-			});
-			if (variations.length > 0) {
-				await tx.productVariation.createMany({ data: variations });
+				if (variations.length > 0) {
+					await tx.productVariation.createMany({ data: variations });
+				}
+			} else {
+				await tx.productVariation.deleteMany({ where: { productId: id } });
 			}
 		} else {
 			const existingVars = await tx.productVariation.findMany({ where: { productId: id }, select: { id: true, basePrice: true } });
