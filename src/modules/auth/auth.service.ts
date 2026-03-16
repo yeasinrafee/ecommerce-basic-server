@@ -273,9 +273,22 @@ const login = async (payload: LoginInput): Promise<AuthResult> => {
     ]);
   }
 
+  // Prevent login when the corresponding profile is not active
+  if (admin && admin.status !== 'ACTIVE') {
+    throw new AppError(403, 'Admin account not active', [
+      { message: 'Admin account is not active', code: 'ADMIN_INACTIVE' }
+    ]);
+  }
+
+  if (customer && customer.status !== 'ACTIVE') {
+    throw new AppError(403, 'Customer account not active', [
+      { message: 'Customer account is not active', code: 'CUSTOMER_INACTIVE' }
+    ]);
+  }
+
   const name = admin?.name || user.email.split("@")[0];
   const image = customer?.image ?? admin?.image ?? null;
-  const status = admin ? admin.status : null;
+  const status = admin ? admin.status : customer ? customer.status : null;
 
   const tokens = generateAuthTokens({
     id: user.id,
