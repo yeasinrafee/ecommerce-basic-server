@@ -74,6 +74,13 @@ export const createOrderService = async (
     for (const item of data.products) {
       const product = await tx.product.findUnique({
         where: { id: item.productId },
+        include: {
+          productVariations: {
+            where: {
+              id: { in: item.variationIds || [] },
+            },
+          },
+        },
       });
 
       if (!product) {
@@ -84,7 +91,8 @@ export const createOrderService = async (
         throw new AppError(400, `Not enough stock for product ${product.name}`);
       }
 
-      let finalPrice = product.Baseprice;
+      let basePriceToUse = product.Baseprice;
+      let finalPriceToUse = product.Baseprice; 
       let appliedDiscountType: DiscountType = product.discountType || DiscountType.NONE;
       let appliedDiscountValue = product.discountValue || 0;
 
@@ -97,22 +105,33 @@ export const createOrderService = async (
         const now = new Date();
         if (now >= product.discountStartDate && now <= product.discountEndDate) {
           if (product.discountType === DiscountType.FLAT_DISCOUNT) {
-            finalPrice -= product.discountValue;
+            finalPriceToUse -= product.discountValue;
           } else if (product.discountType === DiscountType.PERCENTAGE_DISCOUNT) {
-            finalPrice -= (product.Baseprice * product.discountValue) / 100;
+            finalPriceToUse -= (product.Baseprice * product.discountValue) / 100;
           }
         } else {
           appliedDiscountType = DiscountType.NONE;
           appliedDiscountValue = 0;
-          finalPrice = product.Baseprice;
+          finalPriceToUse = product.Baseprice;
         }
       } else {
         appliedDiscountType = DiscountType.NONE;
         appliedDiscountValue = 0;
       }
 
-      if (finalPrice < 0) finalPrice = 0;
-      baseAmount += finalPrice * item.quantity;
+      if (item.variationIds && item.variationIds.length > 0) {
+        for (const variation of product.productVariations) {
+          if (variation.basePrice > basePriceToUse) {
+            basePriceToUse = variation.basePrice;
+          }
+          if (variation.finalPrice > finalPriceToUse) {
+            finalPriceToUse = variation.finalPrice;
+          }
+        }
+      }
+
+      if (finalPriceToUse < 0) finalPriceToUse = 0;
+      baseAmount += finalPriceToUse * item.quantity;
 
       if (product.weight) {
         totalWeight += product.weight * item.quantity;
@@ -123,10 +142,15 @@ export const createOrderService = async (
       orderItemsData.push({
         productId: product.id,
         quantity: item.quantity,
-        Baseprice: product.Baseprice,
-        finalPrice: finalPrice,
+        Baseprice: basePriceToUse,
+        finalPrice: finalPriceToUse,
         discountType: appliedDiscountType,
         discountValue: appliedDiscountValue,
+        variations: {
+          create: (item.variationIds || []).map((vId) => ({
+            productVariationId: vId,
+          })),
+        },
       });
 
       const updateResult = await tx.product.updateMany({

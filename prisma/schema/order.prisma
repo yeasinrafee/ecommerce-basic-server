@@ -61,6 +61,18 @@ model OrderItem {
     createdAt     DateTime      @default(now())
     updatedAt     DateTime      @updatedAt
 
+    variations OrderItemVariation[]
+
     @@index([orderId])
     @@index([productId])
+}
+
+model OrderItemVariation {
+    id                 String           @id @default(uuid())
+    orderItem          OrderItem        @relation(fields: [orderItemId], references: [id])
+    orderItemId        String
+    productVariation   ProductVariation @relation(fields: [productVariationId], references: [id])
+    productVariationId String
+
+    @@unique([orderItemId, productVariationId])
 }

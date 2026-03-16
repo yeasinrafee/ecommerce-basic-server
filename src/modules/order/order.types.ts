@@ -10,6 +10,7 @@ export interface CreateOrderAddress {
 export interface CreateOrderItem {
   productId: string;
   quantity: number;
+  variationIds?: string[];
 }
 
 export interface CreateOrderDto {
