@@ -90,7 +90,7 @@ const deleteWishlistItems = async (userId: string, productIds: string | string[]
     return true;
 };
 
-const addToCart = async (userId: string, productIds: string | string[]) => {
+const transferToCart = async (userId: string, productIds: string | string[]) => {
     const wishlistId = await getCustomerWishlistId(userId);
     const ids = Array.isArray(productIds) ? productIds : [productIds];
 
@@ -111,5 +111,5 @@ export const wishlistService = {
     getWishlistItem,
     updateWishlist,
     deleteWishlistItems,
-    addToCart
+    transferToCart
 };
