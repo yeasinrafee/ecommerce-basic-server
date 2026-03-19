@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { sendResponse } from '../../common/utils/send-response.js';
 import { cartService } from './cart.service.js';
 import { AppError } from '../../common/errors/app-error.js';
+import { AddToCartDto, UpdateCartDto, RemoveFromCartDto } from './cart.types.js';
 
 const getCartItems = async (req: Request, res: Response) => {
     const data = await cartService.getCartItems(req.user!.id);
@@ -16,13 +17,14 @@ const getCartItems = async (req: Request, res: Response) => {
 };
 
 const addToCart = async (req: Request, res: Response) => {
-    const productIds = req.body.productIds || (req.body.productId ? [req.body.productId] : null);
+    const { productId, productIds } = req.body as AddToCartDto;
+    const ids = productIds || (productId ? [productId] : null);
     
-    if (!productIds || (Array.isArray(productIds) && productIds.length === 0)) {
+    if (!ids || (Array.isArray(ids) && ids.length === 0)) {
         throw new AppError(400, 'Product IDs are required', [{ message: 'Missing product ID(s)', code: 'MISSING_DATA' }]);
     }
 
-    const data = await cartService.addToCart(req.user!.id, productIds);
+    const data = await cartService.addToCart(req.user!.id, ids);
     
     sendResponse({
         res,
@@ -34,10 +36,10 @@ const addToCart = async (req: Request, res: Response) => {
 };
 
 const updateCartItems = async (req: Request, res: Response) => {
-    const productIds = req.body.productIds || (req.body.productId ? [req.body.productId] : null);
-    const addedToCart = req.body.addedToCart;
+    const { productId, productIds, addedToCart } = req.body as UpdateCartDto;
+    const ids = productIds || (productId ? [productId] : null);
 
-    if (!productIds || (Array.isArray(productIds) && productIds.length === 0)) {
+    if (!ids || (Array.isArray(ids) && ids.length === 0)) {
         throw new AppError(400, 'Product IDs are required', [{ message: 'Missing product ID(s)', code: 'MISSING_DATA' }]);
     }
 
@@ -45,7 +47,7 @@ const updateCartItems = async (req: Request, res: Response) => {
         throw new AppError(400, 'addedToCart field is required', [{ message: 'Missing status', code: 'MISSING_DATA' }]);
     }
 
-    const data = await cartService.updateCartItems(req.user!.id, productIds, addedToCart);
+    const data = await cartService.updateCartItems(req.user!.id, ids, addedToCart);
     
     sendResponse({
         res,
@@ -57,13 +59,14 @@ const updateCartItems = async (req: Request, res: Response) => {
 };
 
 const removeItemsFromCart = async (req: Request, res: Response) => {
-    const productIds = req.body.productIds || (req.body.productId ? [req.body.productId] : null);
+    const { productId, productIds } = req.body as RemoveFromCartDto;
+    const ids = productIds || (productId ? [productId] : null);
 
-    if (!productIds || (Array.isArray(productIds) && productIds.length === 0)) {
+    if (!ids || (Array.isArray(ids) && ids.length === 0)) {
         throw new AppError(400, 'Product IDs are required', [{ message: 'Missing product ID(s)', code: 'MISSING_DATA' }]);
     }
 
-    await cartService.removeItemsFromCart(req.user!.id, productIds);
+    await cartService.removeItemsFromCart(req.user!.id, ids);
     
     sendResponse({
         res,
