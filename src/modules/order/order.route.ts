@@ -29,13 +29,13 @@ router.get(
 );
 router.get("/:id", authenticate, asyncHandler(orderController.getOrderById));
 router.patch(
-  "/status/:id",
+  "/:id/status",
   authenticate,
   authorizeRoles(Role.ADMIN, Role.SUPER_ADMIN),
   asyncHandler(orderController.updateOrderStatus),
 );
 router.patch(
-  "/cancel/:id",
+  "/:id/cancel",
   authenticate,
   authorizeRoles(Role.CUSTOMER),
   asyncHandler(orderController.cancelOrder),

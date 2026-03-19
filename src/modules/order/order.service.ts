@@ -228,7 +228,7 @@ export const createOrderService = async (
     const finalAmount = amountAfterPromo + finalShippingCharge + taxAmount;
 
     const expectedDeliveryDate = new Date();
-    expectedDeliveryDate.setHours(expectedDeliveryDate.getHours() + deliveryTime);
+    expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + Math.ceil(deliveryTime || 0));
 
     let discountValueForOrder = 0;
     if (data.promoId) {
@@ -268,11 +268,36 @@ export const createOrderService = async (
         },
       },
       include: {
-        orderItems: true,
+        customer: true,
+        promo: true,
+        address: {
+          include: {
+            zone: {
+              include: {
+                zonePolicies: {
+                  include: { zonePolicy: true },
+                },
+              },
+            },
+          },
+        },
+        orderItems: {
+          include: {
+            product: true,
+            variations: {
+              include: {
+                productVariation: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    return order;
+    // attach the chosen zone policy details used for shipping
+    const zonePolicy = zonePolicyLink?.zonePolicy ?? null;
+
+    return { ...order, zonePolicy };
   });
 
   void emailService.sendEmail({
@@ -309,6 +334,12 @@ export const getAllOrdersService = async (
       orderBy: { createdAt: 'desc' },
       include: {
         customer: true,
+        promo: true,
+        address: {
+          include: {
+            zone: true,
+          },
+        },
         orderItems: {
           include: {
             product: true,
@@ -343,6 +374,10 @@ export const getOrdersByCustomerService = async (userId: string) => {
     where: { customerId: customer.id },
     orderBy: { createdAt: 'desc' },
     include: {
+      promo: true,
+      address: {
+        include: { zone: true },
+      },
       orderItems: {
         include: {
           product: true,
@@ -357,10 +392,24 @@ export const getOrderByIdService = async (orderId: string, userId?: string, role
     where: { id: orderId },
     include: {
       customer: true,
-      address: true,
+      promo: true,
+      address: {
+        include: {
+          zone: {
+            include: {
+              zonePolicies: {
+                include: { zonePolicy: true },
+              },
+            },
+          },
+        },
+      },
       orderItems: {
         include: {
           product: true,
+          variations: {
+            include: { productVariation: true },
+          },
         },
       },
     },
@@ -380,7 +429,16 @@ export const getOrderByIdService = async (orderId: string, userId?: string, role
     }
   }
 
-  return order;
+  // compute a fallback expected delivery date from order.createdAt + zone policy deliveryTime (days)
+  let expected = order.expectedDeliveryDate ?? null;
+  const deliveryTimeDays = order.address?.zone?.zonePolicies?.[0]?.zonePolicy?.deliveryTime;
+  if (!expected && deliveryTimeDays && order.createdAt) {
+    const d = new Date(order.createdAt);
+    d.setDate(d.getDate() + Math.ceil(deliveryTimeDays || 0));
+    expected = d;
+  }
+
+  return { ...order, expectedDeliveryDate: expected };
 };
 
 export const updateOrderStatusService = async (orderId: string, status: any) => {
