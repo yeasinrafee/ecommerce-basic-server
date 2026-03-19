@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AppError } from '../../common/errors/app-error.js';
 import { sendResponse } from '../../common/utils/send-response.js';
 import { adminService } from './admin.service.js';
 import { normalizeUploadedFiles, uploadMultipleFilesToCloudinary, deleteCloudinaryAsset } from '../../common/utils/file-upload.js';
