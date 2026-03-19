@@ -19,13 +19,13 @@ const getWishlistItemsPaginated = async (userId: string, { page = 1, limit = 10 
 
     const [data, total] = await Promise.all([
         prisma.wishlistItem.findMany({
-            where: { wishlistId },
+            where: { wishlistId, addedToCart: false },
             skip,
             take: limit,
             orderBy: { createdAt: 'desc' },
             include: { product: true }
         }),
-        prisma.wishlistItem.count({ where: { wishlistId } })
+        prisma.wishlistItem.count({ where: { wishlistId, addedToCart: false } })
     ]);
 
     return {
@@ -42,7 +42,7 @@ const getWishlistItemsPaginated = async (userId: string, { page = 1, limit = 10 
 const getAllWishlistItems = async (userId: string) => {
     const wishlistId = await getCustomerWishlistId(userId);
     return prisma.wishlistItem.findMany({
-        where: { wishlistId },
+        where: { wishlistId, addedToCart: false },
         orderBy: { createdAt: 'desc' },
         include: { product: true }
     });
@@ -50,8 +50,8 @@ const getAllWishlistItems = async (userId: string) => {
 
 const getWishlistItem = async (userId: string, productId: string) => {
     const wishlistId = await getCustomerWishlistId(userId);
-    const item = await prisma.wishlistItem.findUnique({
-        where: { wishlistId_productId: { wishlistId, productId } },
+    const item = await prisma.wishlistItem.findFirst({
+        where: { wishlistId, productId, addedToCart: false },
         include: { product: true }
     });
 
