@@ -90,5 +90,7 @@ model ProductVariation {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  orderItems OrderItemVariation[]
+
   @@unique([productId, attributeId, attributeValue])
 }
