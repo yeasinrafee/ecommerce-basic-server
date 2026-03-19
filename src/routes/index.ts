@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { dashboardRoutes } from '../modules/dashboard/dashboard.route.js';
 import { productRoutes } from '../modules/product/product.route.js';
 import { authRoutes } from '../modules/auth/auth.route.js';
 import { productCategoryRoutes } from '../modules/category/product-category.route.js';
@@ -44,4 +45,7 @@ router.use('/reviews', reviewRoutes);
 router.use('/orders', orderRoutes);
 router.use('/customers', customerRoutes);
 
+router.use('/dashboard', dashboardRoutes);
+
 export const apiRoutes = router;
+
