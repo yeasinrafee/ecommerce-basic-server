@@ -6,7 +6,6 @@ const getCustomerWishlistId = async (userId: string) => {
     const customer = await prisma.customer.findUnique({ where: { userId } });
     if (!customer) throw new AppError(404, 'Customer not found', [{ message: 'No customer profile for this user', code: 'NOT_FOUND' }]);
     
-    // As per user instructions, wishlist is created with customer, so we just fetch it
     const wishlist = await prisma.wishlist.findUnique({ where: { customerId: customer.id } });
     if (!wishlist) throw new AppError(404, 'Wishlist not found', [{ message: 'No wishlist for this customer', code: 'NOT_FOUND' }]);
 

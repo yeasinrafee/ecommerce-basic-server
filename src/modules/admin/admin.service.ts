@@ -44,7 +44,14 @@ const getAdmins = async ({ page = 1, limit = 10, searchTerm, status }: AdminList
 };
 
 const getAdminById = async (id: string) => {
-    return prisma.admin.findFirst({ where: { id, user: { role: Role.ADMIN, verified: true } }, include: { user: true } });
+    return prisma.admin.findFirst({ where: { id, user: { verified: true } }, include: { user: true } });
+};
+
+const getAdminByUserId = async (userId: string) => {
+    return prisma.admin.findFirst({
+        where: { userId },
+        include: { user: true }
+    });
 };
 
 const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPublicId?: string | null) => {
@@ -68,6 +75,8 @@ const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPubli
         const adminData: any = {};
         if (typeof payload.name === 'string') adminData.name = payload.name;
         if (payload.status !== undefined) adminData.status = payload.status as any;
+        
+        // Handle image update in payload
         if (payload.image !== undefined) adminData.image = payload.image;
 
         const updatedAdmin = await tx.admin.update({ where: { id }, data: adminData });
@@ -79,25 +88,19 @@ const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPubli
         };
     });
 
-    
+    // Handle Cloudinary asset cleanup after successful transaction
     try {
-        
-        if (newUploadedPublicId !== undefined) {
-            const newPub = newUploadedPublicId ?? null;
-            if (previousPublicId && previousPublicId !== newPub) {
+        const hasNewImage = newUploadedPublicId !== undefined && newUploadedPublicId !== null;
+        const explicitlyRemovedImage = payload.image === null;
+
+        if (previousPublicId && (hasNewImage || explicitlyRemovedImage)) {
+            // Only delete if the publicId is indeed different (avoid deleting if same image re-uploaded somehow)
+            if (previousPublicId !== newUploadedPublicId) {
                 try {
                     await deleteCloudinaryAsset(previousPublicId);
                 } catch (err) {
                     console.warn('Failed to delete previous cloud asset', { previousPublicId, err: (err as Error).message });
                 }
-            }
-        }
-
-        if (payload.image === null && previousPublicId) {
-            try {
-                await deleteCloudinaryAsset(previousPublicId);
-            } catch (err) {
-                console.warn('Failed to delete previous cloud asset on explicit remove', { previousPublicId, err: (err as Error).message });
             }
         }
     } catch (err) {
@@ -114,21 +117,23 @@ const deleteAdmin = async (id: string) => {
     }
     const previousPublicId = getPublicIdFromUrl(existing.image) ?? null;
 
-    if (previousPublicId) {
-        try {
-            await deleteCloudinaryAsset(previousPublicId);
-        } catch (err) {
-            console.warn('Failed to delete cloud asset before admin removal', { previousPublicId, err: (err as Error).message });
-            throw new AppError(500, 'Failed to delete associated image from cloud', [
-                { message: (err as Error).message, code: 'CLOUD_DELETE_FAILED' }
-            ]);
-        }
-    }
+    // Delete at the VERY end or before transaction? 
+    // To ensure atomicity with Cloudinary, we should delete AFTER DB deletion is successful.
+    // However, if DB fails, we still have the file. If Cloudinary fails, we can either rollback DB (via transaction) or just log it.
 
     await prisma.$transaction(async (tx) => {
         await tx.admin.delete({ where: { id } });
         await tx.user.delete({ where: { id: existing.userId } });
     });
+
+    if (previousPublicId) {
+        try {
+            await deleteCloudinaryAsset(previousPublicId);
+        } catch (err) {
+            console.warn('Failed to delete cloud asset after admin removal', { previousPublicId, err: (err as Error).message });
+            // Don't throw here as the Record is already deleted from DB. Orphaned file is better than inconsistent DB/Client state.
+        }
+    }
 
     return true;
 };
@@ -140,6 +145,7 @@ const getAllAdmins = async () => {
 const adminServiceObj = {
     getAdmins,
     getAdminById,
+    getAdminByUserId,
     getAllAdmins,
     updateAdmin,
     deleteAdmin

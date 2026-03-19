@@ -12,7 +12,31 @@ async function main() {
     create: { name: "Dhaka" },
   });
 
-  // 2. Create Products
+  const brandNames = ["Acme", "Nimbus", "Orion"];
+  const brands = [] as any[];
+  for (const name of brandNames) {
+    const slug = name.toLowerCase().replace(/\s+/g, '-');
+    const b = await prisma.brand.upsert({
+      where: { name },
+      update: {},
+      create: { name, slug }
+    });
+    brands.push(b);
+  }
+
+  const categoryNames = ["Electronics", "Home", "Outdoors"];
+  const categories = [] as any[];
+  for (const name of categoryNames) {
+    const slug = name.toLowerCase().replace(/\s+/g, '-');
+    const c = await prisma.productCategory.upsert({
+      where: { slug },
+      update: {},
+      create: { name, slug }
+    });
+    categories.push(c);
+  }
+
+  // 2. Create Products (assign random brand and category)
   const products = [];
   for (let i = 1; i <= 10; i++) {
     const basePrice = 100 * i;
@@ -21,6 +45,9 @@ async function main() {
     const finalPrice = discountType === DiscountType.PERCENTAGE_DISCOUNT 
       ? basePrice * (1 - discountValue / 100) 
       : basePrice;
+    // pick a brand and category
+    const brand = brands[i % brands.length];
+    const category = categories[i % categories.length];
 
     const p = await prisma.product.upsert({
       where: { sku: `sku-prod-${i}` },
@@ -36,6 +63,16 @@ async function main() {
         sku: `sku-prod-${i}`,
         status: Status.ACTIVE,
         stockStatus: StockStatus.IN_STOCK,
+        brandId: brand.id,
+        categories: {
+          create: [
+            {
+              category: {
+                connect: { id: category.id }
+              }
+            }
+          ]
+        }
       },
     });
     products.push(p);
@@ -86,12 +123,34 @@ async function main() {
       },
     });
 
-    // Create 2 orders for each person
+    // Create 2 orders for each person — ensure one order in March 2026 and the other in a different month
     for (let o = 1; o <= 2; o++) {
       // Pick 3-5 random products
       const orderProductCount = 3 + Math.floor(Math.random() * 3);
       const shuffled = [...products].sort(() => 0.5 - Math.random());
       const selectedProducts = shuffled.slice(0, orderProductCount);
+
+      // Generate a placement date in 2026. One order will be in March (month index 2),
+      // the other will be in one of a few other selected months.
+      const targetYear = 2026;
+      const monthsPool = [0, 2, 3, 6, 10]; // Jan, Mar, Apr, Jul, Nov (0-based)
+      const marchIndex = 2;
+      const otherMonths = monthsPool.filter((m) => m !== marchIndex);
+      const month = o === 1 ? marchIndex : otherMonths[(c + o) % otherMonths.length];
+      const day = 1 + Math.floor(Math.random() * 28);
+      const hour = Math.floor(Math.random() * 24);
+      const minute = Math.floor(Math.random() * 60);
+      const orderDate = new Date(targetYear, month, day, hour, minute, 0);
+
+      // track used months for logging later
+      if (typeof globalThis.__seedUsedMonths === 'undefined') {
+        // attach to global to persist across loop iterations in some runtimes
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        globalThis.__seedUsedMonths = new Set<number>();
+      }
+      // @ts-ignore
+      globalThis.__seedUsedMonths.add(month);
 
       let baseAmount = 0;
       const orderItemsData = selectedProducts.map(p => {
@@ -104,6 +163,8 @@ async function main() {
           finalPrice: p.finalPrice,
           discountType: p.discountType,
           discountValue: p.discountValue,
+          createdAt: orderDate,
+          updatedAt: orderDate,
         };
       });
 
@@ -125,6 +186,8 @@ async function main() {
           baseShippingCharge: shippingCharge,
           finalShippingCharge: shippingCharge,
           orderStatus: OrderStatus.PENDING,
+          createdAt: orderDate,
+          updatedAt: orderDate,
           orderItems: {
             create: orderItemsData
           }
@@ -135,6 +198,12 @@ async function main() {
   }
 
   console.log("Seed completed successfully");
+  // Print which months were used (human-friendly)
+  // @ts-ignore
+  const usedSet: Set<number> = globalThis.__seedUsedMonths ?? new Set<number>();
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const usedNames = Array.from(usedSet).sort((a,b)=>a-b).map(m=>monthNames[m]);
+  console.log("Orders were created for months:", usedNames.join(', '));
 }
 
 main()

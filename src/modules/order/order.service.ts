@@ -5,6 +5,7 @@ import type { CreateOrderDto } from './order.types.js';
 import type { PrismaClient } from '@prisma/client';
 import { emailService, emailQueue } from '../../common/services/email.service.js';
 import { orderEmailTemplates } from './order.email-templates.js';
+import { notificationService } from '../notification/notification.service.js';
 
 export const createOrderService = async (
   userId: string,
@@ -306,6 +307,11 @@ export const createOrderService = async (
     html: orderEmailTemplates.orderPlaced(result.customerName, result.finalAmount),
   });
 
+  void notificationService.addNotification(
+    'New Order Placed',
+    `A new order has been placed by ${result.customerName}. Order ID: ${result.id}`
+  );
+
   return result;
 };
 
@@ -520,6 +526,11 @@ export const cancelOrderService = async (orderId: string, userId: string) => {
     subject: 'Order Cancelled',
     html: orderEmailTemplates.orderCancelled(order.customerName),
   });
+
+  void notificationService.addNotification(
+    'Order Cancelled',
+    `Order #${order.id} has been cancelled by the customer ${order.customerName}.`
+  );
 
   return updatedOrder;
 };

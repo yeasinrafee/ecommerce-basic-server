@@ -199,7 +199,7 @@ const deleteSocialMediaLink = async (ids: string | string[]) => {
 };
 
 // --- Slider ---
-const getSliders = async () => prisma.slider.findMany({ orderBy: { createdAt: 'desc' } });
+const getSliders = async () => prisma.slider.findMany({ orderBy: { serial: 'asc' } });
 const getSlider = async (id: string) => prisma.slider.findUnique({ where: { id } });
 const getSlidersByIds = async (ids: string[]) => prisma.slider.findMany({ where: { id: { in: ids } } });
 const createSlider = async (payload: CreateSliderDto | CreateSliderDto[]) => {
@@ -218,10 +218,29 @@ const createSlider = async (payload: CreateSliderDto | CreateSliderDto[]) => {
 };
 const updateSlider = async (payload: UpdateSliderDto | UpdateSliderDto[]) => {
     if (Array.isArray(payload)) {
-        return prisma.$transaction(payload.map(item => {
-            const { id, ...rest } = item;
-            return prisma.slider.update({ where: { id }, data: rest });
+        if (!payload.length) return [];
+
+        const normalized = payload.map((item, index) => ({
+            ...item,
+            serial: typeof item.serial === 'number' ? item.serial : index + 1,
         }));
+
+        return prisma.$transaction(async (tx) => {
+            for (let index = 0; index < normalized.length; index += 1) {
+                await tx.slider.update({
+                    where: { id: normalized[index].id },
+                    data: { serial: -(index + 1) },
+                });
+            }
+
+            const updated: any[] = [];
+            for (const item of normalized) {
+                const { id, ...rest } = item;
+                updated.push(await tx.slider.update({ where: { id }, data: rest }));
+            }
+
+            return updated;
+        });
     }
 
     const { id, ...rest } = payload;

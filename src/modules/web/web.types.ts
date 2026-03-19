@@ -36,7 +36,7 @@ export type CreateSliderDto = {
     image: string;
     link?: string | null;
 };
-export type UpdateSliderDto = Partial<CreateSliderDto> & { id: string; };
+export type UpdateSliderDto = Partial<CreateSliderDto> & { id: string; serial?: number; };
 
 export type CreateTestimonialDto = {
     name: string;

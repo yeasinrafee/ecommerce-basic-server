@@ -81,6 +81,7 @@ router.delete('/social-media/delete/:id', authenticate, authorizeRoles(Role.SUPE
 router.get('/slider/get-all', asyncHandler(webController.getSliders));
 router.get('/slider/get/:id', asyncHandler(webController.getSlider));
 router.post('/slider/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), upload.any(), asyncHandler(webController.createSlider));
+router.patch('/slider/reorder', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.updateSlider));
 router.patch('/slider/update/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), upload.any(), asyncHandler(webController.updateSlider));
 router.delete('/slider/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(webController.deleteSlider));
 
