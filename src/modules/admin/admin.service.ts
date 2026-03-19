@@ -147,6 +147,7 @@ const getAllAdmins = async () => {
 const adminServiceObj = {
     getAdmins,
     getAdminById,
+    getAdminByUserId,
     getAllAdmins,
     updateAdmin,
     deleteAdmin
