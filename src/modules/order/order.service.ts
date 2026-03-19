@@ -268,11 +268,36 @@ export const createOrderService = async (
         },
       },
       include: {
-        orderItems: true,
+        customer: true,
+        promo: true,
+        address: {
+          include: {
+            zone: {
+              include: {
+                zonePolicies: {
+                  include: { zonePolicy: true },
+                },
+              },
+            },
+          },
+        },
+        orderItems: {
+          include: {
+            product: true,
+            variations: {
+              include: {
+                productVariation: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    return order;
+    // attach the chosen zone policy details used for shipping
+    const zonePolicy = zonePolicyLink?.zonePolicy ?? null;
+
+    return { ...order, zonePolicy };
   });
 
   void emailService.sendEmail({
@@ -309,6 +334,12 @@ export const getAllOrdersService = async (
       orderBy: { createdAt: 'desc' },
       include: {
         customer: true,
+        promo: true,
+        address: {
+          include: {
+            zone: true,
+          },
+        },
         orderItems: {
           include: {
             product: true,
@@ -343,6 +374,10 @@ export const getOrdersByCustomerService = async (userId: string) => {
     where: { customerId: customer.id },
     orderBy: { createdAt: 'desc' },
     include: {
+      promo: true,
+      address: {
+        include: { zone: true },
+      },
       orderItems: {
         include: {
           product: true,
@@ -357,10 +392,16 @@ export const getOrderByIdService = async (orderId: string, userId?: string, role
     where: { id: orderId },
     include: {
       customer: true,
-      address: true,
+      promo: true,
+      address: {
+        include: { zone: true },
+      },
       orderItems: {
         include: {
           product: true,
+          variations: {
+            include: { productVariation: true },
+          },
         },
       },
     },
