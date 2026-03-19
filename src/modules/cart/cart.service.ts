@@ -1,0 +1,73 @@
+import { prisma } from '../../config/prisma.js';
+import { AppError } from '../../common/errors/app-error.js';
+
+const getCustomerWishlistId = async (userId: string) => {
+    const customer = await prisma.customer.findUnique({ where: { userId } });
+    if (!customer) throw new AppError(404, 'Customer not found', [{ message: 'No customer profile for this user', code: 'NOT_FOUND' }]);
+    
+    const wishlist = await prisma.wishlist.findUnique({ where: { customerId: customer.id } });
+    if (!wishlist) throw new AppError(404, 'Wishlist not found', [{ message: 'No wishlist for this customer', code: 'NOT_FOUND' }]);
+
+    return wishlist.id;
+};
+
+const addToCart = async (userId: string, productIds: string | string[]) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    const ids = Array.isArray(productIds) ? productIds : [productIds];
+
+    return prisma.$transaction(async (tx) => {
+        for (const productId of ids) {
+            await tx.wishlistItem.upsert({
+                where: { wishlistId_productId: { wishlistId, productId } },
+                create: { wishlistId, productId, addedToCart: true },
+                update: { addedToCart: true }
+            });
+        }
+        return tx.wishlistItem.findMany({
+            where: { wishlistId, productId: { in: ids }, addedToCart: true },
+            include: { product: true }
+        });
+    });
+};
+
+const getCartItems = async (userId: string) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    return prisma.wishlistItem.findMany({
+        where: { wishlistId, addedToCart: true },
+        orderBy: { updatedAt: 'desc' },
+        include: { product: true }
+    });
+};
+
+const updateCartItems = async (userId: string, productIds: string | string[], addedToCart: boolean) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    const ids = Array.isArray(productIds) ? productIds : [productIds];
+
+    await prisma.wishlistItem.updateMany({
+        where: { wishlistId, productId: { in: ids } },
+        data: { addedToCart }
+    });
+
+    return prisma.wishlistItem.findMany({
+        where: { wishlistId, productId: { in: ids } },
+        include: { product: true }
+    });
+};
+
+const removeItemsFromCart = async (userId: string, productIds: string | string[]) => {
+    const wishlistId = await getCustomerWishlistId(userId);
+    const ids = Array.isArray(productIds) ? productIds : [productIds];
+
+    await prisma.wishlistItem.updateMany({
+        where: { wishlistId, productId: { in: ids } },
+        data: { addedToCart: false }
+    });
+    return true;
+};
+
+export const cartService = {
+    addToCart,
+    getCartItems,
+    updateCartItems,
+    removeItemsFromCart
+};
