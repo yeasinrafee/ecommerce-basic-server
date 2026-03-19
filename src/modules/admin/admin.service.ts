@@ -44,7 +44,14 @@ const getAdmins = async ({ page = 1, limit = 10, searchTerm, status }: AdminList
 };
 
 const getAdminById = async (id: string) => {
-    return prisma.admin.findFirst({ where: { id, user: { role: Role.ADMIN, verified: true } }, include: { user: true } });
+    return prisma.admin.findFirst({ where: { id, user: { verified: true } }, include: { user: true } });
+};
+
+const getAdminByUserId = async (userId: string) => {
+    return prisma.admin.findFirst({
+        where: { userId },
+        include: { user: true }
+    });
 };
 
 const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPublicId?: string | null) => {

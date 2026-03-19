@@ -37,6 +37,66 @@ const getAdmin = async (req: Request, res: Response) => {
     });
 };
 
+const getProfile = async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError(401, 'Unauthorized', []);
+
+    const admin = await adminService.getAdminByUserId(userId);
+
+    sendResponse({
+        res,
+        statusCode: 200,
+        success: true,
+        message: 'Profile fetched',
+        data: admin
+    });
+};
+
+const updateProfile = async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new AppError(401, 'Unauthorized', []);
+
+    const admin = await adminService.getAdminByUserId(userId);
+    if (!admin) throw new AppError(404, 'Admin profile not found', []);
+
+    const payload = req.body || {};
+    let newlyUploadedPublicId: string | null = null;
+
+    try {
+        const files = normalizeUploadedFiles(req.files);
+        if (files.length > 0) {
+            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
+                projectFolder: 'admins',
+                entityId: admin.id,
+                fileNamePrefix: 'admin_profile'
+            });
+
+            const uploaded = uploadedFiles[0];
+            payload.image = uploaded?.secureUrl ?? null;
+            newlyUploadedPublicId = uploaded?.publicId ?? null;
+        }
+
+        const updated = await adminService.updateAdmin(admin.id, payload, newlyUploadedPublicId);
+
+        sendResponse({
+            res,
+            statusCode: 200,
+            success: true,
+            message: 'Profile updated',
+            data: updated
+        });
+    } catch (err) {
+        if (newlyUploadedPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedPublicId);
+            } catch (deleteErr) {
+                console.warn('Failed to cleanup newly uploaded asset after profile update failure', { newlyUploadedPublicId });
+            }
+        }
+        throw err;
+    }
+};
+
 const updateAdmin = async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
@@ -126,8 +186,10 @@ const bulkUpdateStatus = async (req: Request, res: Response) => {
 export const adminController = {
     getAdmins,
     getAdmin,
+    getProfile,
+    updateProfile,
     updateAdmin,
     deleteAdmin,
-    getAllAdmins
-    ,bulkUpdateStatus
+    getAllAdmins,
+    bulkUpdateStatus
 };
