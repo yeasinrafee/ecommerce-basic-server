@@ -98,7 +98,7 @@ export const orderEmailTemplates = {
         ${trackingNumber ? `<p style="margin: 5px 0 0 0; font-size: 14px; color: #333;"><strong>Tracking Number:</strong> ${trackingNumber}</p>` : ''}
       </div>
       <p style="font-size: 14px; color: #555; line-height: 1.5;">
-        You can expect your delivery soon. Use the tracking details to stay updated on the progress.
+        You can expect your delivery soon.
       </p>
     `;
     return layout('Order Shipped!', content);
@@ -114,7 +114,7 @@ export const orderEmailTemplates = {
         <p style="margin: 0; font-size: 14px; color: #333;"><strong>Order Status:</strong> Delivered</p>
       </div>
       <p style="font-size: 14px; color: #555; line-height: 1.5;">
-        If you have a moment, we'd love to hear your feedback on your experience.
+        Thank you for choosing our service!
       </p>
     `;
     return layout('Order Delivered!', content);
