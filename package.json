@@ -12,6 +12,7 @@
     "prisma:studio": "prisma studio",
     "prisma:superadmin": "tsx prisma/seed/superadmin.ts",
     "prisma:customer": "tsx prisma/seed/seed-customer.ts",
+    "prisma:order": "tsx prisma/seed/seed-order.ts",
     "prisma:seed-all": "tsx prisma/seed/seed-all.ts"
   },
   "keywords": [],
