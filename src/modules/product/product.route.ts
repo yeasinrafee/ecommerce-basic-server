@@ -33,6 +33,7 @@ router.get('/all', asyncHandler(productController.getAllProducts));
 router.get('/hot-deals', asyncHandler(productController.getHotDeals));
 router.get('/new-arrivals', asyncHandler(productController.getNewArrivals));
 router.get('/get-limited', asyncHandler(productController.getProductsLimited));
+router.get('/get/:slug', asyncHandler(productController.getProductBySlug));
 router.get('/:id', asyncHandler(productController.getProductById));
 router.delete('/:id', asyncHandler(productController.deleteProduct));
 

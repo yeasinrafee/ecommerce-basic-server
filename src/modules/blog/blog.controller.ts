@@ -142,6 +142,13 @@ const getBlog = async (req: Request, res: Response) => {
     sendResponse({ res, statusCode: 200, success: true, message: 'Blog fetched', data: b });
 };
 
+const getBlogBySlug = async (req: Request, res: Response) => {
+    const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
+    const b = await blogService.getBlogBySlug(slug);
+
+    sendResponse({ res, statusCode: 200, success: true, message: 'Blog fetched', data: b });
+};
+
 const getAllBlogs = async (req: Request, res: Response) => {
     const blogs = await blogService.getAllBlogs();
 
@@ -160,6 +167,7 @@ export const blogController = {
     updateBlog,
     getBlogs,
     getBlog,
+    getBlogBySlug,
     getAllBlogs,
     deleteBlog
 };

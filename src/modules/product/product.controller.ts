@@ -362,6 +362,16 @@ if (!product) {
 	sendResponse({ res, statusCode: 200, success: true, message: 'Product retrieved', data: product });
 };
 
+const getProductBySlug = async (req: Request, res: Response) => {
+	const slug = String(req.params.slug);
+	const product = await productService.getProductBySlug(slug);
+	if (!product) {
+		throw new AppError(404, 'Product not found', [{ message: 'No product found with the provided slug', code: 'PRODUCT_NOT_FOUND' }]);
+	}
+
+	sendResponse({ res, statusCode: 200, success: true, message: 'Product retrieved', data: product });
+};
+
 const getHotDeals = async (req: Request, res: Response) => {
 	const count = req.query.count ? Number(req.query.count) : 10;
 	const products = await productService.getHotDeals(count);
@@ -694,6 +704,7 @@ export const productController = {
  	getHotDeals,
  	getNewArrivals,
  	getProductById,
+	getProductBySlug,
  	deleteProduct,
  	updateProduct,
  	patchProduct,

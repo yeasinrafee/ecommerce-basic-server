@@ -411,6 +411,47 @@ const getProductById = async (id: string) => {
  	});
 };
 
+const getProductBySlug = async (slug: string) => {
+	return prisma.product.findUnique({
+		where: { slug },
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { include: { attribute: true } },
+			productReviews: {
+				where: { parentId: null },
+				include: {
+					user: {
+						select: {
+							id: true,
+							email: true,
+							customers: { select: { phone: true } },
+							admins: { select: { name: true, image: true } }
+						}
+					},
+					replies: {
+						include: {
+							user: {
+								select: {
+									id: true,
+									email: true,
+									customers: { select: { phone: true } },
+									admins: { select: { name: true, image: true } }
+								}
+							}
+						},
+						orderBy: { createdAt: 'asc' }
+					}
+				},
+				orderBy: { createdAt: 'desc' }
+			}
+		}
+	});
+};
+
 const getHotDeals = async (count: number = 10) => {
 	return prisma.product.findMany({
 		where: {
@@ -696,6 +737,7 @@ export const productService = {
 	getProductsLimited,
 	getAllProducts,
 	getProductById,
+	getProductBySlug,
 	getHotDeals,
 	getNewArrivals,
 	deleteProduct,

@@ -117,6 +117,45 @@ const getBlogById = async (id: string) => {
     });
 };
 
+const getBlogBySlug = async (slug: string) => {
+    return prisma.blog.findUnique({
+        where: { slug },
+        include: {
+            category: true,
+            tags: { include: { tag: true } },
+            user: true,
+            seos: true,
+            comments: {
+                where: { parentId: null },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            customers: { select: { phone: true } },
+                            admins: { select: { name: true, image: true } }
+                        }
+                    },
+                    replies: {
+                        include: {
+                            user: {
+                                select: {
+                                    id: true,
+                                    email: true,
+                                    customers: { select: { phone: true } },
+                                    admins: { select: { name: true, image: true } }
+                                }
+                            }
+                        },
+                        orderBy: { createdAt: 'asc' }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            }
+        }
+    });
+};
+
 const createBlog = async ({ title, image, authorName, shortDescription, content, categoryId, tagIds = [], userId, seo }: CreateBlogDto) => {
     if (!userId) {
         throw new AppError(401, 'Unauthorized', [{ message: 'Missing user id', code: 'UNAUTHORIZED' }]);
@@ -273,6 +312,7 @@ const getAllBlogs = async () => {
 export const blogService = {
     getBlogs,
     getBlogById,
+    getBlogBySlug,
     getAllBlogs,
     createBlog,
     updateBlog,

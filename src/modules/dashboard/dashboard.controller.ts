@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { getDashboardAnalyticsService } from './dashboard.service.js';
-import { getDashboardQuerySchema } from './dashboard.validation.js';
+import { getDashboardQuerySchema } from './dashboard.types.js';
 
 export const getDashboardAnalytics = async (
   req: Request,
