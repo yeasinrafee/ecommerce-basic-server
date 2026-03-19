@@ -21,6 +21,7 @@ import { cartRoutes } from '../modules/cart/cart.route.js';
 import { reviewRoutes } from '../modules/review/review.route.js';
 import { orderRoutes } from '../modules/order/order.route.js';
 import { customerRoutes } from '../modules/customer/customer.route.js';
+import { notificationRoutes } from '../modules/notification/notification.route.js';
 const router = Router();
 
 router.use('/products', productRoutes);
@@ -44,6 +45,7 @@ router.use('/carts', cartRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/orders', orderRoutes);
 router.use('/customers', customerRoutes);
+router.use('/notifications', notificationRoutes);
 
 router.use('/dashboard', dashboardRoutes);
 
