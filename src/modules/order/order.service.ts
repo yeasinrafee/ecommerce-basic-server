@@ -394,7 +394,15 @@ export const getOrderByIdService = async (orderId: string, userId?: string, role
       customer: true,
       promo: true,
       address: {
-        include: { zone: true },
+        include: {
+          zone: {
+            include: {
+              zonePolicies: {
+                include: { zonePolicy: true },
+              },
+            },
+          },
+        },
       },
       orderItems: {
         include: {
