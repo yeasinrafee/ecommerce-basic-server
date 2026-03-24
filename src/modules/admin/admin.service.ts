@@ -56,7 +56,7 @@ const getAdminByUserId = async (userId: string) => {
 };
 
 const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPublicId?: string | null) => {
-    const existing = await prisma.admin.findFirst({ where: { id, user: { role: Role.ADMIN } } });
+    const existing = await prisma.admin.findFirst({ where: { id, user: { role: { in: [Role.ADMIN, Role.SUPER_ADMIN] } } } });
     if (!existing) {
         throw new AppError(404, 'Admin not found', [{ message: 'No admin exists with the provided id', code: 'NOT_FOUND' }]);
     }
