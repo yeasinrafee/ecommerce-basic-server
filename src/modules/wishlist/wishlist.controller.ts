@@ -33,7 +33,7 @@ const getWishlist = async (req: Request, res: Response) => {
 };
 
 const updateWishlist = async (req: Request, res: Response) => {
-    let productIds = req.body.productIds || req.body.productId;
+    let productIds = req.body?.productIds || req.body?.productId;
     if (!productIds && req.params.id) {
         productIds = [req.params.id];
     }
@@ -47,7 +47,7 @@ const updateWishlist = async (req: Request, res: Response) => {
 };
 
 const deleteWishlist = async (req: Request, res: Response) => {
-    let productIds = req.body.productIds || req.body.productId;
+    let productIds = req.body?.productIds || req.body?.productId;
     if (!productIds && req.params.id) {
         productIds = [req.params.id];
     }
@@ -67,7 +67,7 @@ const deleteWishlistByParamId = async (req: Request, res: Response) => {
 };
 
 const transferToCart = async (req: Request, res: Response) => {
-    let productIds = req.body.productIds || req.body.productId;
+    let productIds = req.body?.productIds || req.body?.productId;
     if (!productIds && req.params.id) {
         productIds = [req.params.id];
     }

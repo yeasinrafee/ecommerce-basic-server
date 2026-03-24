@@ -88,11 +88,41 @@ Add single or multiple items to the wishlist or update existing ones.
 ---
 
 ## 5. Transfer to Cart
-Move items from the wishlist to the cart.
+Move items from the wishlist to the cart by setting `addedToCart` to `true`.
 
-- **URL:** `/transfer-to-cart/:id`
+- **Alt URL:** `/transfer-to-cart` (use with body for multiple IDs)
 - **Method:** `PATCH`
 - **Auth Required:** Yes (Role: `CUSTOMER`)
+- **Headers:** 
+    - `Authorization: Bearer <token>`
+    - `Content-Type: application/json`
+
+### Request Body (Optional if using :id in URL)
+Use this format in Insomnia/Postman to transfer multiple products at once:
+```json
+{
+    "productIds": ["uuid1", "uuid2"]
+}
+```
+*Note: If both are provided, the IDs in the request body take precedence.*
+
+### Response
+```json
+{
+    "success": true,
+    "statusCode": 200,
+    "message": "Wishlist items transferred to cart",
+    "data": [
+        {
+            "id": "uuid",
+            "wishlistId": "uuid",
+            "productId": "uuid",
+            "addedToCart": true,
+            "product": { ...productDetails }
+        }
+    ]
+}
+```
 
 ---
 
