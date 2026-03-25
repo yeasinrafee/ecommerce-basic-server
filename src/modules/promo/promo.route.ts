@@ -9,6 +9,7 @@ const router = Router();
 router.get('/get-all-paginated', asyncHandler(promoController.getPromos));
 router.get('/get-all', asyncHandler(promoController.getAllPromos));
 router.get('/get/:id', asyncHandler(promoController.getPromo));
+router.get('/get-by-code/:code', asyncHandler(promoController.getPromoByCode));
 router.post('/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(promoController.createPromo));
 router.patch('/update/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(promoController.updatePromo));
 router.delete('/delete/:id', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(promoController.deletePromo));

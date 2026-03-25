@@ -33,6 +33,24 @@ const getCustomers = async (req: Request, res: Response) => {
     });
 };
 
+const getMyAddresses = async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+        throw new AppError(401, "Unauthorized");
+    }
+
+    const addresses = await customerService.getCustomerAddressesByUserId(userId);
+
+    sendResponse({
+        res,
+        statusCode: 200,
+        success: true,
+        message: "Addresses retrieved",
+        data: addresses
+    });
+};
+
 const updateSelf = async (req: Request, res: Response) => {
     const userId = (req.user as any).id;
     const customer = await prisma.customer.findUnique({
@@ -96,5 +114,6 @@ const bulkUpdateStatus = async (req: Request, res: Response) => {
 export const customerController = {
     getCustomers,
     updateSelf,
+    getMyAddresses,
     bulkUpdateStatus
 };

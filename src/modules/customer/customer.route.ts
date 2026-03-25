@@ -17,6 +17,12 @@ router.patch(
 	upload.fields([{ name: 'image', maxCount: 1 }]),
 	asyncHandler(customerController.updateSelf)
 );
+router.get(
+	"/me/addresses",
+	authenticate,
+	authorizeRoles(Role.CUSTOMER),
+	asyncHandler(customerController.getMyAddresses)
+);
 router.patch(
 	"/bulk-status",
 	authenticate,

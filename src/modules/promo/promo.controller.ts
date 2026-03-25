@@ -33,6 +33,12 @@ const getPromo = async (req: Request, res: Response) => {
     sendResponse({ res, statusCode: 200, success: true, message: 'Promo fetched', data: promo });
 };
 
+const getPromoByCode = async (req: Request, res: Response) => {
+    const code = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
+    const promo = await promoService.getPromoByCode(code);
+    sendResponse({ res, statusCode: 200, success: true, message: 'Promo fetched', data: promo });
+};
+
 const createPromo = async (req: Request, res: Response) => {
     const data = await promoService.createPromo(req.body);
     sendResponse({ res, statusCode: 201, success: true, message: 'Promo created', data });
@@ -54,6 +60,7 @@ export const promoController = {
     getPromos,
     getAllPromos,
     getPromo,
+    getPromoByCode,
     createPromo,
     updatePromo,
     deletePromo
