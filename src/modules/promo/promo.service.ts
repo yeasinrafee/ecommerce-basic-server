@@ -51,6 +51,16 @@ const getPromoById = async (id: string) => {
     return { ...promo, code: fromUpperUnderscore(promo.code) };
 };
 
+const getPromoByCode = async (code: string) => {
+    const normalizedCode = toUpperUnderscore(code);
+    const promo = await prisma.promo.findUnique({
+        where: { code: normalizedCode }
+    });
+
+    if (!promo) return promo;
+    return { ...promo, code: fromUpperUnderscore(promo.code) };
+};
+
 const createPromo = async (payload: CreatePromoDto) => {
     const code = toUpperUnderscore(payload.code);
 
@@ -125,6 +135,7 @@ export const promoService = {
     getPromos,
     getAllPromos,
     getPromoById,
+    getPromoByCode,
     createPromo,
     updatePromo,
     deletePromo
