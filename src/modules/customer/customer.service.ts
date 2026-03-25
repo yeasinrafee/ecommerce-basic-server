@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { Prisma, Status } from "@prisma/client";
+import { AppError } from "../../common/errors/app-error.js";
 import { CustomerListQuery, UpdateCustomerDto, BulkUpdateStatusDto } from "./customer.types.js";
 
 const getCustomers = async (query: CustomerListQuery) => {
@@ -63,6 +64,31 @@ const getCustomerById = async (id: string) => {
     });
 };
 
+const getCustomerAddressesByUserId = async (userId: string) => {
+    const customer = await prisma.customer.findUnique({
+        where: { userId },
+        select: {
+            id: true
+        }
+    });
+
+    if (!customer) {
+        throw new AppError(404, "Customer not found");
+    }
+
+    return prisma.address.findMany({
+        where: {
+            customerId: customer.id
+        },
+        orderBy: {
+            createdAt: "desc"
+        },
+        include: {
+            zone: true
+        }
+    });
+};
+
 const bulkUpdateStatus = async (payload: BulkUpdateStatusDto) => {
     return prisma.customer.updateMany({
         where: {
@@ -78,5 +104,6 @@ export const customerService = {
     getCustomers,
     updateCustomer,
     getCustomerById,
+    getCustomerAddressesByUserId,
     bulkUpdateStatus
 };
