@@ -19,21 +19,21 @@ router.get('/get/:id', asyncHandler(blogController.getBlog));
 router.post(
 	'/create',
 	authenticate,
-	authorizeRoles(Role.SUPER_ADMIN),
+	authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
 	upload.fields([{ name: 'image', maxCount: 1 }]),
 	asyncHandler(blogController.createBlog),
 );
 router.patch(
 	'/update/:id',
 	authenticate,
-	authorizeRoles(Role.SUPER_ADMIN),
+	authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
 	upload.fields([{ name: 'image', maxCount: 1 }]),
 	asyncHandler(blogController.updateBlog),
 );
 router.delete(
 	'/delete/:id',
 	authenticate,
-	authorizeRoles(Role.SUPER_ADMIN),
+	authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
 	asyncHandler(blogController.deleteBlog),
 );
 

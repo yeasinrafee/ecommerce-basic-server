@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma.js';
 import { AppError } from '../../common/errors/app-error.js';
+import bcrypt from 'bcryptjs';
 import type { UpdateAdminDto, ServiceListResult, AdminListQuery } from './admin.types.js';
 import type { Prisma } from '@prisma/client';
 import { Role } from '@prisma/client';
@@ -55,7 +56,7 @@ const getAdminByUserId = async (userId: string) => {
 };
 
 const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPublicId?: string | null) => {
-    const existing = await prisma.admin.findFirst({ where: { id, user: { role: Role.ADMIN } } });
+    const existing = await prisma.admin.findFirst({ where: { id, user: { role: { in: [Role.ADMIN, Role.SUPER_ADMIN] } } } });
     if (!existing) {
         throw new AppError(404, 'Admin not found', [{ message: 'No admin exists with the provided id', code: 'NOT_FOUND' }]);
     }
@@ -70,6 +71,21 @@ const updateAdmin = async (id: string, payload: UpdateAdminDto, newUploadedPubli
             }
 
             await tx.user.update({ where: { id: existing.userId }, data: { email: payload.email } });
+        }
+
+        if (payload.oldPassword && payload.newPassword) {
+            if (payload.oldPassword.length < 8 || payload.newPassword.length < 8) {
+                throw new AppError(400, 'Password must be at least 8 characters', [{ field: 'newPassword', message: 'Password must be at least 8 characters' }]);
+            }
+            const userForPassword = await tx.user.findUnique({ where: { id: existing.userId } });
+            if (!userForPassword) throw new AppError(404, 'User not found', []);
+            const isMatch = await bcrypt.compare(payload.oldPassword, userForPassword.password);
+            if (!isMatch) {
+                throw new AppError(400, 'Invalid old password', [{ field: 'oldPassword', message: 'Old password does not match' }]);
+            }
+            
+            const hashedPassword = await bcrypt.hash(payload.newPassword, 12);
+            await tx.user.update({ where: { id: existing.userId }, data: { password: hashedPassword } });
         }
 
         const adminData: any = {};

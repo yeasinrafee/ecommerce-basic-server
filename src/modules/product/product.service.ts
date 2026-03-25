@@ -245,22 +245,41 @@ const getProducts = async ({
 		];
 	}
 
-	if (category) {
-		const categories = Array.isArray(category) ? category : category.split('&');
-		where.categories = {
-			some: {
-				category: {
-					slug: { in: categories }
-				}
-			}
-		};
-	}
+	const categoryFilter = category ? (Array.isArray(category) ? category : String(category).split('&')) : [];
+	const brandFilter = brand ? (Array.isArray(brand) ? brand : String(brand).split('&')) : [];
 
-	if (brand) {
-		const brands = Array.isArray(brand) ? brand : brand.split('&');
-		where.brand = {
-			slug: { in: brands }
-		};
+	if (categoryFilter.length > 0 || brandFilter.length > 0) {
+		const conditions: Prisma.ProductWhereInput[] = [];
+
+		if (categoryFilter.length > 0) {
+			conditions.push({
+				categories: {
+					some: {
+						category: {
+							slug: { in: categoryFilter }
+						}
+					}
+				}
+			});
+		}
+
+		if (brandFilter.length > 0) {
+			conditions.push({
+				brand: {
+					slug: { in: brandFilter }
+				}
+			});
+		}
+
+		if (where.OR) {
+			where.AND = [
+				{ OR: where.OR },
+				{ OR: conditions }
+			];
+			delete where.OR;
+		} else {
+			where.OR = conditions;
+		}
 	}
 
 	if (minPrice !== undefined || maxPrice !== undefined) {
@@ -312,22 +331,41 @@ const getProductsLimited = async ({ count = 10, searchTerm, category, brand, min
 		];
 	}
 
-	if (category) {
-		const categories = Array.isArray(category) ? category : String(category).split('&');
-		where.categories = {
-			some: {
-				category: {
-					slug: { in: categories }
-				}
-			}
-		};
-	}
+	const categoryFilter = category ? (Array.isArray(category) ? category : String(category).split('&')) : [];
+	const brandFilter = brand ? (Array.isArray(brand) ? brand : String(brand).split('&')) : [];
 
-	if (brand) {
-		const brands = Array.isArray(brand) ? brand : String(brand).split('&');
-		where.brand = {
-			slug: { in: brands }
-		};
+	if (categoryFilter.length > 0 || brandFilter.length > 0) {
+		const conditions: Prisma.ProductWhereInput[] = [];
+
+		if (categoryFilter.length > 0) {
+			conditions.push({
+				categories: {
+					some: {
+						category: {
+							slug: { in: categoryFilter }
+						}
+					}
+				}
+			});
+		}
+
+		if (brandFilter.length > 0) {
+			conditions.push({
+				brand: {
+					slug: { in: brandFilter }
+				}
+			});
+		}
+
+		if (where.OR) {
+			where.AND = [
+				{ OR: where.OR },
+				{ OR: conditions }
+			];
+			delete where.OR;
+		} else {
+			where.OR = conditions;
+		}
 	}
 
 	if (minPrice !== undefined || maxPrice !== undefined) {

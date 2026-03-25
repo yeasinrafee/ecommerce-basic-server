@@ -5,6 +5,8 @@ export type UpdateAdminDto = {
     email?: string;
     status?: Status;
     image?: string | null;
+    oldPassword?: string;
+    newPassword?: string;
 };
 
 export type AdminListQuery = {
