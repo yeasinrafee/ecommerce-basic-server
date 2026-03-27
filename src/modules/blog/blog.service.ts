@@ -45,11 +45,55 @@ const generateUniqueSlug = async (base: string, excludeId?: string, dbClient: an
     return `${base}-${next}`;
 };
 
-const getBlogs = async ({ page = 1, limit = 10, searchTerm }: BlogListQuery = {}): Promise<ServiceListResult<any>> => {
+const getBlogs = async ({ page = 1, limit = 10, searchTerm, category, tag }: BlogListQuery = {}): Promise<ServiceListResult<any>> => {
     const skip = (page - 1) * limit;
-    const where: Prisma.BlogWhereInput = searchTerm
-        ? { title: { contains: searchTerm, mode: 'insensitive' } }
-        : {};
+    
+    const where: Prisma.BlogWhereInput = {};
+    
+    if (searchTerm) {
+        where.OR = [
+            { title: { contains: searchTerm, mode: 'insensitive' } },
+            { authorName: { contains: searchTerm, mode: 'insensitive' } },
+            { content: { contains: searchTerm, mode: 'insensitive' } }
+        ];
+    }
+
+    const categoryFilter = category ? (Array.isArray(category) ? category : String(category).split('&')) : [];
+    const tagFilter = tag ? (Array.isArray(tag) ? tag : String(tag).split('&')) : [];
+
+    if (categoryFilter.length > 0 || tagFilter.length > 0) {
+        const conditions: Prisma.BlogWhereInput[] = [];
+
+        if (categoryFilter.length > 0) {
+            conditions.push({
+                category: {
+                    slug: { in: categoryFilter }
+                }
+            });
+        }
+
+        if (tagFilter.length > 0) {
+            conditions.push({
+                tags: {
+                    some: {
+                        tag: {
+                            slug: { in: tagFilter }
+                        }
+                    }
+                }
+            });
+        }
+
+        if (where.OR) {
+            where.AND = [
+                { OR: where.OR },
+                { OR: conditions }
+            ];
+            delete where.OR;
+        } else {
+            where.OR = conditions;
+        }
+    }
 
     const [data, total] = await Promise.all([
         prisma.blog.findMany({
@@ -305,8 +349,68 @@ const deleteBlog = async (id: string) => {
     return true;
 };
 
-const getAllBlogs = async () => {
-    return prisma.blog.findMany({ orderBy: { createdAt: 'desc' }, include: { category: true, tags: { include: { tag: true } }, user: true, seos: true } });
+const getAllBlogs = async ({ searchTerm, category, tag }: Omit<BlogListQuery, 'page' | 'limit'> = {}) => {
+    const where: Prisma.BlogWhereInput = {};
+    
+    if (searchTerm) {
+        where.OR = [
+            { title: { contains: searchTerm, mode: 'insensitive' } },
+            { authorName: { contains: searchTerm, mode: 'insensitive' } },
+            { content: { contains: searchTerm, mode: 'insensitive' } }
+        ];
+    }
+
+    const categoryFilter = category ? (Array.isArray(category) ? category : String(category).split('&')) : [];
+    const tagFilter = tag ? (Array.isArray(tag) ? tag : String(tag).split('&')) : [];
+
+    if (categoryFilter.length > 0 || tagFilter.length > 0) {
+        const conditions: Prisma.BlogWhereInput[] = [];
+
+        if (categoryFilter.length > 0) {
+            conditions.push({
+                category: {
+                    slug: { in: categoryFilter }
+                }
+            });
+        }
+
+        if (tagFilter.length > 0) {
+            conditions.push({
+                tags: {
+                    some: {
+                        tag: {
+                            slug: { in: tagFilter }
+                        }
+                    }
+                }
+            });
+        }
+
+        if (where.OR) {
+            where.AND = [
+                { OR: where.OR },
+                { OR: conditions }
+            ];
+            delete where.OR;
+        } else {
+            where.OR = conditions;
+        }
+    }
+
+    return prisma.blog.findMany({ where, orderBy: { createdAt: 'desc' }, include: { category: true, tags: { include: { tag: true } }, user: true, seos: true } });
+};
+
+const getRecentBlogs = async (limit: number = 5) => {
+    return prisma.blog.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+            category: true,
+            tags: { include: { tag: true } },
+            user: true,
+            seos: true
+        }
+    });
 };
 
 export const blogService = {
@@ -314,6 +418,7 @@ export const blogService = {
     getBlogById,
     getBlogBySlug,
     getAllBlogs,
+    getRecentBlogs,
     createBlog,
     updateBlog,
     deleteBlog
