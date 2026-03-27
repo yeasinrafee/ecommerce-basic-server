@@ -161,6 +161,13 @@ const getAllBlogs = async (req: Request, res: Response) => {
     sendResponse({ res, statusCode: 200, success: true, message: 'All blogs fetched', data: blogs });
 };
 
+const getRecentBlogs = async (req: Request, res: Response) => {
+    const limit = req.query.limit ? Math.max(1, Number(req.query.limit)) : 5;
+    const blogs = await blogService.getRecentBlogs(limit);
+
+    sendResponse({ res, statusCode: 200, success: true, message: 'Recent blogs fetched', data: blogs });
+};
+
 const deleteBlog = async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     await blogService.deleteBlog(id);
@@ -175,5 +182,6 @@ export const blogController = {
     getBlog,
     getBlogBySlug,
     getAllBlogs,
+    getRecentBlogs,
     deleteBlog
 };

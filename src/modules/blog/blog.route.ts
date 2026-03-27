@@ -14,6 +14,7 @@ const upload = createUploadMiddleware({ maxFileSizeInMB: 5, maxFileCount: 1 });
 
 router.get('/get-all-paginated', asyncHandler(blogController.getBlogs));
 router.get('/get-all', asyncHandler(blogController.getAllBlogs));
+router.get('/recent', asyncHandler(blogController.getRecentBlogs));
 router.get('/get/:slug', asyncHandler(blogController.getBlogBySlug));
 router.get('/get/:id', asyncHandler(blogController.getBlog));
 router.post(

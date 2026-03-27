@@ -400,11 +400,25 @@ const getAllBlogs = async ({ searchTerm, category, tag }: Omit<BlogListQuery, 'p
     return prisma.blog.findMany({ where, orderBy: { createdAt: 'desc' }, include: { category: true, tags: { include: { tag: true } }, user: true, seos: true } });
 };
 
+const getRecentBlogs = async (limit: number = 5) => {
+    return prisma.blog.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+            category: true,
+            tags: { include: { tag: true } },
+            user: true,
+            seos: true
+        }
+    });
+};
+
 export const blogService = {
     getBlogs,
     getBlogById,
     getBlogBySlug,
     getAllBlogs,
+    getRecentBlogs,
     createBlog,
     updateBlog,
     deleteBlog
