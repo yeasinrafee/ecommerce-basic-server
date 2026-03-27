@@ -126,11 +126,13 @@ const updateBlog = async (req: Request, res: Response) => {
 };
 
 const getBlogs = async (req: Request, res: Response) => {
-    const page = Number(req.query.page ?? 1);
-    const limit = Number(req.query.limit ?? 10);
+    const page = Math.max(1, Number(req.query.page ?? 1));
+    const limit = Math.max(1, Number(req.query.limit ?? 10));
     const searchTerm = typeof req.query.searchTerm === 'string' ? req.query.searchTerm : undefined;
+    const category = req.query.category ? (Array.isArray(req.query.category) ? req.query.category as string[] : String(req.query.category)) : undefined;
+    const tag = req.query.tag ? (Array.isArray(req.query.tag) ? req.query.tag as string[] : String(req.query.tag)) : undefined;
 
-    const result = await blogService.getBlogs({ page, limit, searchTerm });
+    const result = await blogService.getBlogs({ page, limit, searchTerm, category, tag });
 
     sendResponse({ res, statusCode: 200, success: true, message: 'Blogs fetched', data: result.data, meta: { ...result.meta, timestamp: new Date().toISOString() } });
 };
@@ -150,7 +152,11 @@ const getBlogBySlug = async (req: Request, res: Response) => {
 };
 
 const getAllBlogs = async (req: Request, res: Response) => {
-    const blogs = await blogService.getAllBlogs();
+    const searchTerm = typeof req.query.searchTerm === 'string' ? req.query.searchTerm : undefined;
+    const category = req.query.category ? (Array.isArray(req.query.category) ? req.query.category as string[] : String(req.query.category)) : undefined;
+    const tag = req.query.tag ? (Array.isArray(req.query.tag) ? req.query.tag as string[] : String(req.query.tag)) : undefined;
+
+    const blogs = await blogService.getAllBlogs({ searchTerm, category, tag });
 
     sendResponse({ res, statusCode: 200, success: true, message: 'All blogs fetched', data: blogs });
 };

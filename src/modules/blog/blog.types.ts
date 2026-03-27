@@ -20,6 +20,8 @@ export type BlogListQuery = {
     page?: number;
     limit?: number;
     searchTerm?: string;
+    category?: string | string[];
+    tag?: string | string[];
 };
 
 export type ServiceListResult<T> = {
