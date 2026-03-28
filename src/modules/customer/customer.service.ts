@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { Prisma, Status } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { AppError } from "../../common/errors/app-error.js";
 import { CustomerListQuery, UpdateCustomerDto, BulkUpdateStatusDto } from "./customer.types.js";
 
@@ -52,14 +53,14 @@ const getCustomers = async (query: CustomerListQuery) => {
 };
 
 const updateCustomer = async (id: string, userId: string, payload: UpdateCustomerDto) => {
-    const { email, phone, ...customerData } = payload;
+    const { email, phone, oldPassword, newPassword, ...customerData } = payload;
 
     return prisma.$transaction(async (tx) => {
         if (email) {
             const existingUser = await tx.user.findFirst({
-                where: { 
-                    email, 
-                    id: { not: userId } 
+                where: {
+                    email,
+                    id: { not: userId }
                 }
             });
 
@@ -88,6 +89,35 @@ const updateCustomer = async (id: string, userId: string, payload: UpdateCustome
                     { field: "phone", message: "This phone number is already taken", code: "PHONE_ALREADY_EXISTS" }
                 ]);
             }
+        }
+
+        if (oldPassword || newPassword) {
+            if (!oldPassword || !newPassword) {
+                throw new AppError(400, "Password update requires oldPassword and newPassword", [
+                    { field: "newPassword", message: "Provide both oldPassword and newPassword" }
+                ]);
+            }
+
+            if (oldPassword.length < 8 || newPassword.length < 8) {
+                throw new AppError(400, "Password must be at least 8 characters", [
+                    { field: "newPassword", message: "Password must be at least 8 characters" }
+                ]);
+            }
+
+            const userForPassword = await tx.user.findUnique({ where: { id: userId } });
+            if (!userForPassword) {
+                throw new AppError(404, "User not found", []);
+            }
+
+            const isMatch = await bcrypt.compare(oldPassword, userForPassword.password);
+            if (!isMatch) {
+                throw new AppError(400, "Invalid old password", [
+                    { field: "oldPassword", message: "Old password does not match" }
+                ]);
+            }
+
+            const hashedPassword = await bcrypt.hash(newPassword, 12);
+            await tx.user.update({ where: { id: userId }, data: { password: hashedPassword } });
         }
 
         return tx.customer.update({
