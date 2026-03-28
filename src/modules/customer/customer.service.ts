@@ -52,7 +52,7 @@ const getCustomers = async (query: CustomerListQuery) => {
 };
 
 const updateCustomer = async (id: string, userId: string, payload: UpdateCustomerDto) => {
-    const { email, ...customerData } = payload;
+    const { email, phone, ...customerData } = payload;
 
     return prisma.$transaction(async (tx) => {
         if (email) {
@@ -75,9 +75,27 @@ const updateCustomer = async (id: string, userId: string, payload: UpdateCustome
             });
         }
 
+        if (phone) {
+            const existingPhone = await tx.customer.findFirst({
+                where: {
+                    phone,
+                    id: { not: id }
+                }
+            });
+
+            if (existingPhone) {
+                throw new AppError(409, "Phone number already in use", [
+                    { field: "phone", message: "This phone number is already taken", code: "PHONE_ALREADY_EXISTS" }
+                ]);
+            }
+        }
+
         return tx.customer.update({
             where: { id },
-            data: customerData,
+            data: {
+                ...customerData,
+                phone
+            },
             include: {
                 user: {
                     select: {

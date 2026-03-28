@@ -34,6 +34,7 @@ const getWishlist = async (req: Request, res: Response) => {
 
 const updateWishlist = async (req: Request, res: Response) => {
     let productIds = req.body?.productIds || req.body?.productId;
+    const variationIds = req.body?.variationIds;
     if (!productIds && req.params.id) {
         productIds = [req.params.id];
     }
@@ -42,7 +43,7 @@ const updateWishlist = async (req: Request, res: Response) => {
         throw new AppError(400, 'Product IDs are required', [{ message: 'Missing product ID(s)', code: 'MISSING_DATA' }]);
     }
 
-    const data = await wishlistService.updateWishlist(req.user!.id, productIds, req.body.addedToCart);
+    const data = await wishlistService.updateWishlist(req.user!.id, productIds, req.body.addedToCart, variationIds);
     sendResponse({ res, statusCode: 200, success: true, message: 'Wishlist updated', data });
 };
 

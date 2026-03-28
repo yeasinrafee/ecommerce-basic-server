@@ -11,21 +11,43 @@ const getCustomerWishlistId = async (userId: string) => {
     return wishlist.id;
 };
 
-const addToCart = async (userId: string, productIds: string | string[]) => {
+const addToCart = async (userId: string, productIds: string | string[], variationIds?: string[]) => {
     const wishlistId = await getCustomerWishlistId(userId);
     const ids = Array.isArray(productIds) ? productIds : [productIds];
 
     return prisma.$transaction(async (tx) => {
         for (const productId of ids) {
-            await tx.wishlistItem.upsert({
+            const item = await tx.wishlistItem.upsert({
                 where: { wishlistId_productId: { wishlistId, productId } },
                 create: { wishlistId, productId, addedToCart: true },
                 update: { addedToCart: true }
             });
+
+            if (variationIds && variationIds.length > 0) {
+                // Remove existing variations to ensure sync
+                await tx.wishlistItemVariation.deleteMany({
+                    where: { wishlistItemId: item.id }
+                });
+
+                // Add new variations
+                await tx.wishlistItemVariation.createMany({
+                    data: variationIds.map(vId => ({
+                        wishlistItemId: item.id,
+                        productVariationId: vId
+                    }))
+                });
+            }
         }
         return tx.wishlistItem.findMany({
             where: { wishlistId, productId: { in: ids }, addedToCart: true },
-            include: { product: true }
+            include: { 
+                product: true,
+                variations: {
+                    include: {
+                        productVariation: true
+                    }
+                }
+            }
         });
     });
 };
@@ -35,7 +57,14 @@ const getCartItems = async (userId: string) => {
     return prisma.wishlistItem.findMany({
         where: { wishlistId, addedToCart: true },
         orderBy: { updatedAt: 'desc' },
-        include: { product: true }
+        include: { 
+            product: true,
+            variations: {
+                include: {
+                    productVariation: true
+                }
+            }
+        }
     });
 };
 

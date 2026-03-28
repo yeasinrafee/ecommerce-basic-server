@@ -17,14 +17,14 @@ const getCartItems = async (req: Request, res: Response) => {
 };
 
 const addToCart = async (req: Request, res: Response) => {
-    const { productId, productIds } = req.body as AddToCartDto;
+    const { productId, productIds, variationIds } = req.body as AddToCartDto;
     const ids = productIds || (productId ? [productId] : null);
     
     if (!ids || (Array.isArray(ids) && ids.length === 0)) {
         throw new AppError(400, 'Product IDs are required', [{ message: 'Missing product ID(s)', code: 'MISSING_DATA' }]);
     }
 
-    const data = await cartService.addToCart(req.user!.id, ids);
+    const data = await cartService.addToCart(req.user!.id, ids, variationIds);
     
     sendResponse({
         res,

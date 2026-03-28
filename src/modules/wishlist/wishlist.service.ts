@@ -22,7 +22,14 @@ const getWishlistItemsPaginated = async (userId: string, { page = 1, limit = 10 
             skip,
             take: limit,
             orderBy: { createdAt: 'desc' },
-            include: { product: true }
+            include: { 
+                product: true,
+                variations: {
+                    include: {
+                        productVariation: true
+                    }
+                }
+            }
         }),
         prisma.wishlistItem.count({ where: { wishlistId, addedToCart: false } })
     ]);
@@ -43,7 +50,14 @@ const getAllWishlistItems = async (userId: string) => {
     return prisma.wishlistItem.findMany({
         where: { wishlistId, addedToCart: false },
         orderBy: { createdAt: 'desc' },
-        include: { product: true }
+        include: { 
+            product: true,
+            variations: {
+                include: {
+                    productVariation: true
+                }
+            }
+        }
     });
 };
 
@@ -51,7 +65,14 @@ const getWishlistItem = async (userId: string, productId: string) => {
     const wishlistId = await getCustomerWishlistId(userId);
     const item = await prisma.wishlistItem.findFirst({
         where: { wishlistId, productId, addedToCart: false },
-        include: { product: true }
+        include: { 
+            product: true,
+            variations: {
+                include: {
+                    productVariation: true
+                }
+            }
+        }
     });
 
     if (!item) {
@@ -60,21 +81,42 @@ const getWishlistItem = async (userId: string, productId: string) => {
     return item;
 };
 
-const updateWishlist = async (userId: string, productIds: string | string[], addedToCart?: boolean) => {
+const updateWishlist = async (userId: string, productIds: string | string[], addedToCart?: boolean, variationIds?: string[]) => {
     const wishlistId = await getCustomerWishlistId(userId);
     const ids = Array.isArray(productIds) ? productIds : [productIds];
     
     return prisma.$transaction(async (tx) => {
         for (const productId of ids) {
-            await tx.wishlistItem.upsert({
+            const item = await tx.wishlistItem.upsert({
                 where: { wishlistId_productId: { wishlistId, productId } },
                 create: { wishlistId, productId, addedToCart: addedToCart ?? false },
                 update: { addedToCart: addedToCart ?? false }
             });
+
+            if (variationIds && variationIds.length > 0) {
+                // Ensure variations are synced
+                await tx.wishlistItemVariation.deleteMany({
+                    where: { wishlistItemId: item.id }
+                });
+
+                await tx.wishlistItemVariation.createMany({
+                    data: variationIds.map(vId => ({
+                        wishlistItemId: item.id,
+                        productVariationId: vId
+                    }))
+                });
+            }
         }
         return tx.wishlistItem.findMany({
             where: { wishlistId, productId: { in: ids } },
-            include: { product: true }
+            include: { 
+                product: true,
+                variations: {
+                    include: {
+                        productVariation: true
+                    }
+                }
+            }
         });
     });
 };

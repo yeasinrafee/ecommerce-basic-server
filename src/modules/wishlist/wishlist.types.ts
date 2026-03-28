@@ -4,7 +4,9 @@ export type WishlistQuery = {
 };
 
 export type UpdateWishlistDto = {
+    productId?: string;
     productIds?: string | string[];
+    variationIds?: string[];
     addedToCart?: boolean;
 };
 
