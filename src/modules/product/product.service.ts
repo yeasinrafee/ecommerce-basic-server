@@ -491,10 +491,26 @@ const getProductBySlug = async (slug: string) => {
 };
 
 const getHotDeals = async (count: number = 10) => {
+	const now = new Date();
 	return prisma.product.findMany({
 		where: {
 			discountType: { not: 'NONE' },
-			discountValue: { not: null }
+			discountValue: { not: null },
+			status: 'ACTIVE',
+			AND: [
+				{
+					OR: [
+						{ discountStartDate: null },
+						{ discountStartDate: { lte: now } }
+					]
+				},
+				{
+					OR: [
+						{ discountEndDate: null },
+						{ discountEndDate: { gte: now } }
+					]
+				}
+			]
 		},
 		take: count,
 		orderBy: { discountValue: 'desc' },
