@@ -4,7 +4,7 @@ model Customer {
     userId    String   @unique
     name      String
     image     String?
-    phone     String?
+    phone     String? @unique
     status    Status @default(ACTIVE)
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

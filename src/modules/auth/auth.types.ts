@@ -111,6 +111,11 @@ export const registerCustomerSchema = z.object({
 		.trim()
 		.min(1, 'Email is required')
 		.email('A valid email address is required'),
+	phone: z
+		.string()
+		.trim()
+		.min(1, 'Phone number is required')
+		.regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
 	password: z
 		.string()
 		.min(1, 'Password is required')

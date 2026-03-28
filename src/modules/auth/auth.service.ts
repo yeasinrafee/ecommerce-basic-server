@@ -44,6 +44,22 @@ const registerCustomer = async (
     ]);
   }
 
+  const existingPhone = await prisma.customer.findUnique({
+    where: {
+      phone: payload.phone,
+    },
+  });
+
+  if (existingPhone) {
+    throw new AppError(409, "Phone number is already in use", [
+      {
+        field: "phone",
+        message: "This phone number is already registered",
+        code: "PHONE_ALREADY_EXISTS",
+      },
+    ]);
+  }
+
   const hashedPassword = await bcrypt.hash(payload.password, 12);
   const generatedUserId = crypto.randomUUID();
 
@@ -74,6 +90,7 @@ const registerCustomer = async (
       data: {
         userId: user.id,
         name: payload.name,
+        phone: payload.phone,
       },
     });
 
