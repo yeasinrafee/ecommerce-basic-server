@@ -93,4 +93,5 @@ model ProductVariation {
   orderItems OrderItemVariation[]
 
   @@unique([productId, attributeId, attributeValue])
+  wishlistItemVariations WishlistItemVariation[]
 }
