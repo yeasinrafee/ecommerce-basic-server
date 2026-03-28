@@ -73,6 +73,7 @@ const registerCustomer = async (
     const customer = await tx.customer.create({
       data: {
         userId: user.id,
+        name: payload.name,
       },
     });
 

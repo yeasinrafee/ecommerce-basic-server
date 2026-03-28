@@ -12,17 +12,27 @@ const getCompanyInformation = async () => {
     return prisma.companyInformation.findFirst();
 };
 
-const createOrUpdateCompanyInformation = async (payload: CreateCompanyInformationDto, newlyUploadedPublicId?: string | null) => {
+const createOrUpdateCompanyInformation = async (payload: CreateCompanyInformationDto, newlyUploadedLogoPublicId?: string | null, newlyUploadedFooterLogoPublicId?: string | null) => {
     const existing = await prisma.companyInformation.findFirst();
 
     if (existing) {
         if (payload.logo && existing.logo) {
             const previousPublicId = getPublicIdFromUrl(existing.logo);
-            if (previousPublicId && previousPublicId !== newlyUploadedPublicId) {
+            if (previousPublicId && previousPublicId !== newlyUploadedLogoPublicId) {
                 try {
                     await deleteCloudinaryAsset(previousPublicId);
                 } catch (err) {
                     console.warn('Failed to delete old company information logo asset', { previousPublicId, err: (err as Error).message });
+                }
+            }
+        }
+        if (payload.footerLogo && existing.footerLogo) {
+            const previousPublicId = getPublicIdFromUrl(existing.footerLogo);
+            if (previousPublicId && previousPublicId !== newlyUploadedFooterLogoPublicId) {
+                try {
+                    await deleteCloudinaryAsset(previousPublicId);
+                } catch (err) {
+                    console.warn('Failed to delete old company information footer logo asset', { previousPublicId, err: (err as Error).message });
                 }
             }
         }
@@ -35,7 +45,7 @@ const createOrUpdateCompanyInformation = async (payload: CreateCompanyInformatio
     return prisma.companyInformation.create({ data: payload });
 };
 
-const updateCompanyInformation = async (payload: UpdateCompanyInformationDto, newlyUploadedPublicId?: string | null) => {
+const updateCompanyInformation = async (payload: UpdateCompanyInformationDto, newlyUploadedLogoPublicId?: string | null, newlyUploadedFooterLogoPublicId?: string | null) => {
     const existing = await prisma.companyInformation.findFirst();
     if (!existing) {
         throw new AppError(404, 'Company information not found', [{ message: 'No company info exists to update', code: 'NOT_FOUND' }]);
@@ -43,11 +53,22 @@ const updateCompanyInformation = async (payload: UpdateCompanyInformationDto, ne
 
     if (payload.logo && existing.logo) {
         const previousPublicId = getPublicIdFromUrl(existing.logo);
-        if (previousPublicId && previousPublicId !== newlyUploadedPublicId) {
+        if (previousPublicId && previousPublicId !== newlyUploadedLogoPublicId) {
             try {
                 await deleteCloudinaryAsset(previousPublicId);
             } catch (err) {
                 console.warn('Failed to delete old company information logo asset', { previousPublicId, err: (err as Error).message });
+            }
+        }
+    }
+
+    if (payload.footerLogo && existing.footerLogo) {
+        const previousPublicId = getPublicIdFromUrl(existing.footerLogo);
+        if (previousPublicId && previousPublicId !== newlyUploadedFooterLogoPublicId) {
+            try {
+                await deleteCloudinaryAsset(previousPublicId);
+            } catch (err) {
+                console.warn('Failed to delete old company information footer logo asset', { previousPublicId, err: (err as Error).message });
             }
         }
     }
@@ -71,6 +92,17 @@ const deleteCompanyInformation = async () => {
                 await deleteCloudinaryAsset(previousPublicId);
             } catch (err) {
                 console.warn('Failed to delete old company information image asset', { previousPublicId, err: (err as Error).message });
+            }
+        }
+    }
+
+    if (existing.footerLogo) {
+        const previousPublicId = getPublicIdFromUrl(existing.footerLogo);
+        if (previousPublicId) {
+            try {
+                await deleteCloudinaryAsset(previousPublicId);
+            } catch (err) {
+                console.warn('Failed to delete old company information footer logo asset', { previousPublicId, err: (err as Error).message });
             }
         }
     }

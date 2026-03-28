@@ -51,10 +51,44 @@ const getCustomers = async (query: CustomerListQuery) => {
     };
 };
 
-const updateCustomer = async (id: string, _userId: string, payload: UpdateCustomerDto) => {
-    return prisma.customer.update({
-        where: { id },
-        data: payload
+const updateCustomer = async (id: string, userId: string, payload: UpdateCustomerDto) => {
+    const { email, ...customerData } = payload;
+
+    return prisma.$transaction(async (tx) => {
+        if (email) {
+            const existingUser = await tx.user.findFirst({
+                where: { 
+                    email, 
+                    id: { not: userId } 
+                }
+            });
+
+            if (existingUser) {
+                throw new AppError(409, "Email already in use", [
+                    { field: "email", message: "This email is already taken", code: "EMAIL_ALREADY_EXISTS" }
+                ]);
+            }
+
+            await tx.user.update({
+                where: { id: userId },
+                data: { email }
+            });
+        }
+
+        return tx.customer.update({
+            where: { id },
+            data: customerData,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        role: true,
+                        verified: true
+                    }
+                }
+            }
+        });
     });
 };
 
