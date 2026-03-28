@@ -7,7 +7,7 @@ import { Role } from '@prisma/client';
 
 const router = Router();
 
-const upload = createUploadMiddleware({ maxFileSizeInMB: 5, maxFileCount: 1 });
+const upload = createUploadMiddleware({ maxFileSizeInMB: 5, maxFileCount: 2 });
 
 
 router.get('/company-information/get', asyncHandler(webController.getCompanyInformation));
