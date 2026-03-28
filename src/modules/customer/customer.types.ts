@@ -12,6 +12,8 @@ export interface UpdateCustomerDto {
     email?: string;
     image?: string;
     phone?: string;
+    oldPassword?: string;
+    newPassword?: string;
 }
 
 export interface BulkUpdateStatusDto {

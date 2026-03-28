@@ -9,7 +9,16 @@ import { prisma } from "../../config/prisma.js";
 const updateCustomerSchema = z.object({
     name: z.string().optional(),
     email: z.string().email().optional(),
-    phone: z.string().optional()
+    phone: z.string().optional(),
+    oldPassword: z.string().min(8).optional(),
+    newPassword: z.string().min(8).optional()
+}).refine((data) => {
+    const hasOld = !!data.oldPassword;
+    const hasNew = !!data.newPassword;
+    return (!hasOld && !hasNew) || (hasOld && hasNew);
+}, {
+    message: "Both oldPassword and newPassword are required to change password",
+    path: ["newPassword"]
 });
 
 const bulkStatusUpdateSchema = z.object({

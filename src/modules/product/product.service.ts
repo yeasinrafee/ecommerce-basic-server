@@ -491,10 +491,26 @@ const getProductBySlug = async (slug: string) => {
 };
 
 const getHotDeals = async (count: number = 10) => {
+	const now = new Date();
 	return prisma.product.findMany({
 		where: {
 			discountType: { not: 'NONE' },
-			discountValue: { not: null }
+			discountValue: { not: null },
+			status: 'ACTIVE',
+			AND: [
+				{
+					OR: [
+						{ discountStartDate: null },
+						{ discountStartDate: { lte: now } }
+					]
+				},
+				{
+					OR: [
+						{ discountEndDate: null },
+						{ discountEndDate: { gte: now } }
+					]
+				}
+			]
 		},
 		take: count,
 		orderBy: { discountValue: 'desc' },
@@ -680,8 +696,13 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 		}
 
 		if (Array.isArray(payload.attributes)) {
-			await tx.productVariation.deleteMany({ where: { productId: id } });
-			const variations = payload.attributes.flatMap((attribute) => {
+			// Find existing variations
+			const existingVariations = await tx.productVariation.findMany({
+				where: { productId: id }
+			});
+
+			// Build desired variations
+			const desiredVariations = payload.attributes.flatMap((attribute) => {
 				const normalizedName = toUpperUnderscore(attribute.name);
 				const attributeId = attributeMap.get(normalizedName) as string;
 				return attribute.pairs.map((pair) => {
@@ -697,8 +718,52 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 					};
 				});
 			});
-			if (variations.length > 0) {
-				await tx.productVariation.createMany({ data: variations });
+
+			const desiredMap = new Map(desiredVariations.map(v => [`${v.attributeId}-${v.attributeValue}`, v]));
+			const existingMap = new Map(existingVariations.map(v => [`${v.attributeId}-${v.attributeValue}`, v]));
+
+			const toCreate = [];
+			const toUpdate = [];
+			const toDeleteIds: string[] = [];
+
+			for (const desired of desiredVariations) {
+				const key = `${desired.attributeId}-${desired.attributeValue}`;
+				if (existingMap.has(key)) {
+					toUpdate.push({ id: existingMap.get(key)!.id, data: desired });
+				} else {
+					toCreate.push(desired);
+				}
+			}
+
+			for (const existing of existingVariations) {
+				const key = `${existing.attributeId}-${existing.attributeValue}`;
+				if (!desiredMap.has(key)) {
+					toDeleteIds.push(existing.id);
+				}
+			}
+
+			if (toDeleteIds.length > 0) {
+				await tx.orderItemVariation.deleteMany({
+					where: { productVariationId: { in: toDeleteIds } }
+				});
+				await tx.wishlistItemVariation.deleteMany({
+					where: { productVariationId: { in: toDeleteIds } }
+				});
+				
+				await tx.productVariation.deleteMany({
+					where: { id: { in: toDeleteIds } }
+				});
+			}
+
+			for (const updateDef of toUpdate) {
+				await tx.productVariation.update({
+					where: { id: updateDef.id },
+					data: updateDef.data
+				});
+			}
+
+			if (toCreate.length > 0) {
+				await tx.productVariation.createMany({ data: toCreate });
 			}
 		} else {
 			const existingVars = await tx.productVariation.findMany({ where: { productId: id } });
