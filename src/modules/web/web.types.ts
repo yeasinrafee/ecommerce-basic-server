@@ -5,6 +5,7 @@ export type CreateCompanyInformationDto = {
     shortDescription?: string;
     workingHours?: string;
     logo?: string | null;
+    footerLogo?: string | null;
 };
 
 export type UpdateCompanyInformationDto = Partial<CreateCompanyInformationDto>;

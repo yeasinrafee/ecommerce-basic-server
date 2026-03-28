@@ -16,7 +16,7 @@ router.post(
     '/company-information/create',
     authenticate,
     authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
-    upload.fields([{ name: 'logo', maxCount: 1 }]),
+    upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'footerLogo', maxCount: 1 }]),
     asyncHandler(webController.createCompanyInformation)
 );
 
@@ -24,7 +24,7 @@ router.patch(
     '/company-information/update',
     authenticate,
     authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN),
-    upload.fields([{ name: 'logo', maxCount: 1 }]),
+    upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'footerLogo', maxCount: 1 }]),
     asyncHandler(webController.updateCompanyInformation)
 );
 

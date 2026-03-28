@@ -41,29 +41,50 @@ const getCompanyInformation = async (req: Request, res: Response) => {
 
 const createCompanyInformation = async (req: Request, res: Response) => {
     const payload = req.body || {};
-    let newlyUploadedPublicId: string | null = null;
+    let newlyUploadedLogoPublicId: string | null = null;
+    let newlyUploadedFooterLogoPublicId: string | null = null;
     let logoUrl: string | null | undefined = undefined;
+    let footerLogoUrl: string | null | undefined = undefined;
 
     try {
         const files = normalizeUploadedFiles(req.files);
         if (files.length > 0) {
-            const generatedId = crypto.randomUUID();
-            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
-                projectFolder: 'company-information',
-                entityId: generatedId,
-                fileNamePrefix: 'logo'
-            });
+            const logoFile = (req.files as any)?.logo?.[0];
+            const footerLogoFile = (req.files as any)?.footerLogo?.[0];
 
-            const uploaded = uploadedFiles[0];
-            logoUrl = uploaded?.secureUrl ?? null;
-            newlyUploadedPublicId = uploaded?.publicId ?? null;
+            if (logoFile) {
+                const generatedId = crypto.randomUUID();
+                const uploadedFiles = await uploadMultipleFilesToCloudinary([logoFile], {
+                    projectFolder: 'company-information',
+                    entityId: generatedId,
+                    fileNamePrefix: 'logo'
+                });
+                const uploaded = uploadedFiles[0];
+                logoUrl = uploaded?.secureUrl ?? null;
+                newlyUploadedLogoPublicId = uploaded?.publicId ?? null;
+            }
+
+            if (footerLogoFile) {
+                const generatedId = crypto.randomUUID();
+                const uploadedFiles = await uploadMultipleFilesToCloudinary([footerLogoFile], {
+                    projectFolder: 'company-information',
+                    entityId: generatedId,
+                    fileNamePrefix: 'footerLogo'
+                });
+                const uploaded = uploadedFiles[0];
+                footerLogoUrl = uploaded?.secureUrl ?? null;
+                newlyUploadedFooterLogoPublicId = uploaded?.publicId ?? null;
+            }
         }
 
         if (logoUrl !== undefined) {
             payload.logo = logoUrl;
         }
+        if (footerLogoUrl !== undefined) {
+            payload.footerLogo = footerLogoUrl;
+        }
 
-        const data = await webService.createOrUpdateCompanyInformation(payload, newlyUploadedPublicId);
+        const data = await webService.createOrUpdateCompanyInformation(payload, newlyUploadedLogoPublicId, newlyUploadedFooterLogoPublicId);
 
         sendResponse({
             res,
@@ -73,11 +94,18 @@ const createCompanyInformation = async (req: Request, res: Response) => {
             data
         });
     } catch (err) {
-        if (newlyUploadedPublicId) {
+        if (newlyUploadedLogoPublicId) {
             try {
-                await deleteCloudinaryAsset(newlyUploadedPublicId);
+                await deleteCloudinaryAsset(newlyUploadedLogoPublicId);
             } catch (cleanupErr) {
-                console.warn('Failed to cleanup uploaded logo image', { newlyUploadedPublicId, err: (cleanupErr as Error).message });
+                console.warn('Failed to cleanup uploaded logo image', { newlyUploadedLogoPublicId, err: (cleanupErr as Error).message });
+            }
+        }
+        if (newlyUploadedFooterLogoPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedFooterLogoPublicId);
+            } catch (cleanupErr) {
+                console.warn('Failed to cleanup uploaded footer logo image', { newlyUploadedFooterLogoPublicId, err: (cleanupErr as Error).message });
             }
         }
         throw err;
@@ -86,24 +114,41 @@ const createCompanyInformation = async (req: Request, res: Response) => {
 
 const updateCompanyInformation = async (req: Request, res: Response) => {
     const payload = req.body || {};
-    let newlyUploadedPublicId: string | null = null;
+    let newlyUploadedLogoPublicId: string | null = null;
+    let newlyUploadedFooterLogoPublicId: string | null = null;
 
     try {
         const files = normalizeUploadedFiles(req.files);
         if (files.length > 0) {
-            const generatedId = crypto.randomUUID();
-            const uploadedFiles = await uploadMultipleFilesToCloudinary(files, {
-                projectFolder: 'company-information',
-                entityId: generatedId,
-                fileNamePrefix: 'logo'
-            });
+            const logoFile = (req.files as any)?.logo?.[0];
+            const footerLogoFile = (req.files as any)?.footerLogo?.[0];
 
-            const uploaded = uploadedFiles[0];
-            payload.logo = uploaded?.secureUrl ?? null;
-            newlyUploadedPublicId = uploaded?.publicId ?? null;
+            if (logoFile) {
+                const generatedId = crypto.randomUUID();
+                const uploadedFiles = await uploadMultipleFilesToCloudinary([logoFile], {
+                    projectFolder: 'company-information',
+                    entityId: generatedId,
+                    fileNamePrefix: 'logo'
+                });
+                const uploaded = uploadedFiles[0];
+                payload.logo = uploaded?.secureUrl ?? null;
+                newlyUploadedLogoPublicId = uploaded?.publicId ?? null;
+            }
+
+            if (footerLogoFile) {
+                const generatedId = crypto.randomUUID();
+                const uploadedFiles = await uploadMultipleFilesToCloudinary([footerLogoFile], {
+                    projectFolder: 'company-information',
+                    entityId: generatedId,
+                    fileNamePrefix: 'footerLogo'
+                });
+                const uploaded = uploadedFiles[0];
+                payload.footerLogo = uploaded?.secureUrl ?? null;
+                newlyUploadedFooterLogoPublicId = uploaded?.publicId ?? null;
+            }
         }
 
-        const data = await webService.updateCompanyInformation(payload, newlyUploadedPublicId);
+        const data = await webService.updateCompanyInformation(payload, newlyUploadedLogoPublicId, newlyUploadedFooterLogoPublicId);
 
         sendResponse({
             res,
@@ -113,11 +158,18 @@ const updateCompanyInformation = async (req: Request, res: Response) => {
             data
         });
     } catch (err) {
-        if (newlyUploadedPublicId) {
+        if (newlyUploadedLogoPublicId) {
             try {
-                await deleteCloudinaryAsset(newlyUploadedPublicId);
+                await deleteCloudinaryAsset(newlyUploadedLogoPublicId);
             } catch (cleanupErr) {
-                console.warn('Failed to cleanup uploaded logo image after update failure', { newlyUploadedPublicId });
+                console.warn('Failed to cleanup uploaded logo image after update failure', { newlyUploadedLogoPublicId });
+            }
+        }
+        if (newlyUploadedFooterLogoPublicId) {
+            try {
+                await deleteCloudinaryAsset(newlyUploadedFooterLogoPublicId);
+            } catch (cleanupErr) {
+                console.warn('Failed to cleanup uploaded footer logo image after update failure', { newlyUploadedFooterLogoPublicId });
             }
         }
         throw err;
