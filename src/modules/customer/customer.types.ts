@@ -8,6 +8,8 @@ export interface CustomerListQuery {
 }
 
 export interface UpdateCustomerDto {
+    name?: string;
+    email?: string;
     image?: string;
     phone?: string;
 }
