@@ -23,6 +23,12 @@ router.get(
 	authorizeRoles(Role.CUSTOMER),
 	asyncHandler(customerController.getMyAddresses)
 );
+router.delete(
+	"/me/addresses/:id",
+	authenticate,
+	authorizeRoles(Role.CUSTOMER),
+	asyncHandler(customerController.deleteMyAddress)
+);
 router.patch(
 	"/bulk-status",
 	authenticate,

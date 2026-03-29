@@ -171,6 +171,38 @@ const getCustomerAddressesByUserId = async (userId: string) => {
     });
 };
 
+const deleteCustomerAddressByUserId = async (userId: string, addressId: string) => {
+    return prisma.$transaction(async (tx) => {
+        const customer = await tx.customer.findUnique({
+            where: { userId },
+            select: {
+                id: true
+            }
+        });
+
+        if (!customer) {
+            throw new AppError(404, "Customer not found");
+        }
+
+        const address = await tx.address.findFirst({
+            where: {
+                id: addressId,
+                customerId: customer.id
+            }
+        });
+
+        if (!address) {
+            throw new AppError(404, "Address not found");
+        }
+
+        return tx.address.delete({
+            where: {
+                id: addressId
+            }
+        });
+    });
+};
+
 const bulkUpdateStatus = async (payload: BulkUpdateStatusDto) => {
     return prisma.customer.updateMany({
         where: {
@@ -187,5 +219,6 @@ export const customerService = {
     updateCustomer,
     getCustomerById,
     getCustomerAddressesByUserId,
+    deleteCustomerAddressByUserId,
     bulkUpdateStatus
 };
