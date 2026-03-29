@@ -216,6 +216,7 @@ const createProduct = async (payload: CreateProductDto) => {
 				additionalInformations: true,
 				seos: true,
 				productVariations: {
+					where: { deletedAt: null },
 					include: {
 						attribute: true
 					}
@@ -236,7 +237,9 @@ const getProducts = async ({
 }: ProductListQuery = {}) => {
 	const skip = (page - 1) * limit;
 
-	const where: Prisma.ProductWhereInput = {};
+	const where: Prisma.ProductWhereInput = {
+		deletedAt: null
+	};
 
 	if (searchTerm) {
 		where.OR = [
@@ -304,7 +307,7 @@ const getProducts = async ({
 				tags: { include: { tag: true } },
 				additionalInformations: true,
 				seos: true,
-				productVariations: { include: { attribute: true } },
+				productVariations: { where: { deletedAt: null }, include: { attribute: true } },
 				productReviews: { include: { user: true } }
 			}
 		}),
@@ -379,7 +382,10 @@ const getProductsLimited = async ({ count = 10, searchTerm, category, brand, min
 	}
 
 	return prisma.product.findMany({
-		where,
+		where: {
+			deletedAt: null,
+			...where
+		},
 		take: count,
 		orderBy: { createdAt: 'desc' },
 		include: {
@@ -388,7 +394,7 @@ const getProductsLimited = async ({ count = 10, searchTerm, category, brand, min
 			tags: { include: { tag: true } },
 			additionalInformations: true,
 			seos: true,
-			productVariations: { include: { attribute: true } },
+			productVariations: { where: { deletedAt: null }, include: { attribute: true } },
 			productReviews: { include: { user: true } }
 		}
 	});
@@ -396,6 +402,7 @@ const getProductsLimited = async ({ count = 10, searchTerm, category, brand, min
 
 const getAllProducts = async () => {
  	return prisma.product.findMany({
+		where: { deletedAt: null },
  		orderBy: { createdAt: 'desc' },
  		include: {
  			brand: true,
@@ -403,21 +410,21 @@ const getAllProducts = async () => {
  			tags: { include: { tag: true } },
  			additionalInformations: true,
  			seos: true,
- 			productVariations: { include: { attribute: true } }
+				productVariations: { where: { deletedAt: null }, include: { attribute: true } }
  		}
  	});
 };
 
 const getProductById = async (id: string) => {
- 	return prisma.product.findUnique({
- 		where: { id },
+	return prisma.product.findFirst({
+		where: { id, deletedAt: null },
  		include: {
  			brand: true,
  			categories: { include: { category: true } },
  			tags: { include: { tag: true } },
  			additionalInformations: true,
  			seos: true,
- 			productVariations: { include: { attribute: true } },
+			productVariations: { where: { deletedAt: null }, include: { attribute: true } },
 			productReviews: {
 				where: { parentId: null },
 				include: {
@@ -450,15 +457,15 @@ const getProductById = async (id: string) => {
 };
 
 const getProductBySlug = async (slug: string) => {
-	return prisma.product.findUnique({
-		where: { slug },
+	return prisma.product.findFirst({
+		where: { slug, deletedAt: null },
 		include: {
 			brand: true,
 			categories: { include: { category: true } },
 			tags: { include: { tag: true } },
 			additionalInformations: true,
 			seos: true,
-			productVariations: { include: { attribute: true } },
+			productVariations: { where: { deletedAt: null }, include: { attribute: true } },
 			productReviews: {
 				where: { parentId: null },
 				include: {
@@ -494,6 +501,7 @@ const getHotDeals = async (count: number = 10) => {
 	const now = new Date();
 	return prisma.product.findMany({
 		where: {
+			deletedAt: null,
 			discountType: { not: 'NONE' },
 			discountValue: { not: null },
 			status: 'ACTIVE',
@@ -520,7 +528,7 @@ const getHotDeals = async (count: number = 10) => {
 			tags: { include: { tag: true } },
 			additionalInformations: true,
 			seos: true,
-			productVariations: { include: { attribute: true } },
+			productVariations: { where: { deletedAt: null }, include: { attribute: true } },
 			productReviews: { include: { user: true } }
 		}
 	});
@@ -528,6 +536,7 @@ const getHotDeals = async (count: number = 10) => {
 
 const getNewArrivals = async (count: number = 10) => {
 	return prisma.product.findMany({
+		where: { deletedAt: null },
 		take: count,
 		orderBy: { createdAt: 'desc' },
 		include: {
@@ -536,7 +545,7 @@ const getNewArrivals = async (count: number = 10) => {
 			tags: { include: { tag: true } },
 			additionalInformations: true,
 			seos: true,
-			productVariations: { include: { attribute: true } },
+			productVariations: { where: { deletedAt: null }, include: { attribute: true } },
 			productReviews: { include: { user: true } }
 		}
 	});
@@ -544,12 +553,10 @@ const getNewArrivals = async (count: number = 10) => {
 
 const deleteProduct = async (id: string) => {
 	return prisma.$transaction(async (tx) => {
-		await tx.productVariation.deleteMany({ where: { productId: id } });
- 		await tx.categoriesOnProducts.deleteMany({ where: { productId: id } });
- 		await tx.tagsOnProducts.deleteMany({ where: { productId: id } });
- 		await tx.additionalInformation.deleteMany({ where: { productId: id } });
- 		await tx.seo.deleteMany({ where: { productId: id } });
- 		await tx.product.delete({ where: { id } });
+		await tx.product.update({
+			where: { id },
+			data: { deletedAt: new Date() }
+		});
  		return true;
  	});
 };
@@ -696,12 +703,16 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 		}
 
 		if (Array.isArray(payload.attributes)) {
-			// Find existing variations
 			const existingVariations = await tx.productVariation.findMany({
 				where: { productId: id }
 			});
+			const existingVariationsByKey = new Map(
+				existingVariations.map((variation) => [
+					`${variation.attributeId}-${variation.attributeValue}`,
+					variation
+				])
+			);
 
-			// Build desired variations
 			const desiredVariations = payload.attributes.flatMap((attribute) => {
 				const normalizedName = toUpperUnderscore(attribute.name);
 				const attributeId = attributeMap.get(normalizedName) as string;
@@ -719,17 +730,16 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 				});
 			});
 
-			const desiredMap = new Map(desiredVariations.map(v => [`${v.attributeId}-${v.attributeValue}`, v]));
-			const existingMap = new Map(existingVariations.map(v => [`${v.attributeId}-${v.attributeValue}`, v]));
-
 			const toCreate = [];
 			const toUpdate = [];
-			const toDeleteIds: string[] = [];
+			const toSoftDeleteIds: string[] = [];
+			const desiredKeys = new Set(desiredVariations.map((variation) => `${variation.attributeId}-${variation.attributeValue}`));
 
 			for (const desired of desiredVariations) {
 				const key = `${desired.attributeId}-${desired.attributeValue}`;
-				if (existingMap.has(key)) {
-					toUpdate.push({ id: existingMap.get(key)!.id, data: desired });
+				const existingVariation = existingVariationsByKey.get(key);
+				if (existingVariation) {
+					toUpdate.push({ id: existingVariation.id, data: { ...desired, deletedAt: null } });
 				} else {
 					toCreate.push(desired);
 				}
@@ -737,21 +747,15 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 
 			for (const existing of existingVariations) {
 				const key = `${existing.attributeId}-${existing.attributeValue}`;
-				if (!desiredMap.has(key)) {
-					toDeleteIds.push(existing.id);
+				if (existing.deletedAt === null && !desiredKeys.has(key)) {
+					toSoftDeleteIds.push(existing.id);
 				}
 			}
 
-			if (toDeleteIds.length > 0) {
-				await tx.orderItemVariation.deleteMany({
-					where: { productVariationId: { in: toDeleteIds } }
-				});
-				await tx.wishlistItemVariation.deleteMany({
-					where: { productVariationId: { in: toDeleteIds } }
-				});
-				
-				await tx.productVariation.deleteMany({
-					where: { id: { in: toDeleteIds } }
+			if (toSoftDeleteIds.length > 0) {
+				await tx.productVariation.updateMany({
+					where: { id: { in: toSoftDeleteIds } },
+					data: { deletedAt: new Date() }
 				});
 			}
 
@@ -792,7 +796,7 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 				tags: { include: { tag: true } },
 				additionalInformations: true,
 				seos: true,
-				productVariations: { include: { attribute: true } }
+				productVariations: { where: { deletedAt: null }, include: { attribute: true } }
 			}
 		});
 	});
@@ -818,7 +822,7 @@ const patchProduct = async (id: string, payload: PatchProductDto) => {
 			tags: { include: { tag: true } },
 			additionalInformations: true,
 			seos: true,
-			productVariations: { include: { attribute: true } }
+			productVariations: { where: { deletedAt: null }, include: { attribute: true } }
 		}
 	});
 };
