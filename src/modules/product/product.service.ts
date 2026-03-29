@@ -12,7 +12,7 @@ const generateUniqueSlugTx = async (tx: Prisma.TransactionClient, name: string) 
 
 	while (true) {
 		const found = await tx.product.findFirst({
-			where: { slug, deletedAt: null },
+			where: { slug, deletedAt: null, status: 'ACTIVE' },
 			select: { id: true }
 		});
 		if (!found) {
@@ -59,7 +59,7 @@ const createProduct = async (payload: CreateProductDto) => {
 
 		if (payload.sku) {
 			const existingSku = await tx.product.findFirst({
-				where: { sku: payload.sku, deletedAt: null },
+				where: { sku: payload.sku, deletedAt: null, status: 'ACTIVE' },
 				select: { id: true }
 			});
 			if (existingSku) {
@@ -588,7 +588,7 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 
 		if (payload.sku) {
 			const existingSku = await tx.product.findFirst({
-				where: { sku: payload.sku, id: { not: id }, deletedAt: null },
+				where: { sku: payload.sku, id: { not: id }, deletedAt: null, status: 'ACTIVE' },
 				select: { id: true }
 			});
 			if (existingSku) {
