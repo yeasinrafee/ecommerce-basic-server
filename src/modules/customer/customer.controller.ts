@@ -26,6 +26,10 @@ const bulkStatusUpdateSchema = z.object({
     status: z.enum(["ACTIVE", "INACTIVE"])
 });
 
+const deleteAddressParamsSchema = z.object({
+    id: z.string().uuid()
+});
+
 const getCustomers = async (req: Request, res: Response) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 20;
@@ -122,9 +126,28 @@ const bulkUpdateStatus = async (req: Request, res: Response) => {
     });
 };
 
+const deleteMyAddress = async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+        throw new AppError(401, "Unauthorized");
+    }
+
+    const { id: addressId } = deleteAddressParamsSchema.parse(req.params);
+    await customerService.deleteCustomerAddressByUserId(userId, addressId);
+
+    sendResponse({
+        res,
+        statusCode: 200,
+        success: true,
+        message: "Address deleted"
+    });
+};
+
 export const customerController = {
     getCustomers,
     updateSelf,
     getMyAddresses,
+    deleteMyAddress,
     bulkUpdateStatus
 };
