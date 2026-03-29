@@ -6,6 +6,7 @@ import { prisma } from '../../config/prisma.js';
 import { createQueue, createWorker } from '../../common/services/mq.service.js';
 import { emailService } from '../../common/services/email.service.js';
 import { orderEmailTemplates } from './order.email-templates.js';
+import { env } from '../../config/env.js';
 
 type RGB = [number, number, number];
 
@@ -73,12 +74,12 @@ interface OrderPlacedEmailJobData {
 }
 
 const COMPANY_DEFAULTS: CompanyData = {
-  name: 'Zayrah',
+  name: env.companyName,
   tagline: 'Premium Fashion & Lifestyle',
   address: 'House 12, Road 5, Mirpur-10, Dhaka-1216, Bangladesh',
   phone: '+880 1700-000000',
   email: 'support@zayrah.com',
-  website: 'www.zayrah.com',
+  website: env.companyWebsite,
   logo: '/logo.png',
 };
 

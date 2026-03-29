@@ -37,6 +37,8 @@ export const env = {
   mailUser: required(process.env.MAIL_USER, 'MAIL_USER'),
   mailPass: required(process.env.MAIL_PASS, 'MAIL_PASS'),
   mailFrom: required(process.env.MAIL_FROM, 'MAIL_FROM'),
+  companyName: process.env.COMPANY_NAME ?? 'Zayrah',
+  companyWebsite: process.env.COMPANY_WEBSITE ?? 'www.zayrah.com',
   redisHost: process.env.REDIS_HOST ?? '127.0.0.1',
   redisPort: Number(process.env.REDIS_PORT ?? 6379),
   redisPassword: process.env.REDIS_PASSWORD,
