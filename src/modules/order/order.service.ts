@@ -350,6 +350,7 @@ export const getAllOrdersService = async (
 
   if (searchTerm) {
     where.OR = [
+      { id: { contains: searchTerm, mode: 'insensitive' } },
       { customerName: { contains: searchTerm, mode: 'insensitive' } },
       { customerEmail: { contains: searchTerm, mode: 'insensitive' } },
       { customerPhone: { contains: searchTerm, mode: 'insensitive' } },
