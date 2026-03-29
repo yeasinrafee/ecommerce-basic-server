@@ -7,6 +7,27 @@ import { emailService, emailQueue } from '../../common/services/email.service.js
 import { orderEmailTemplates } from './order.email-templates.js';
 import { notificationService } from '../notification/notification.service.js';
 
+const attachSelectedAttributes = (order: any) => ({
+  ...order,
+  orderItems: order.orderItems?.map((item: any) => ({
+    ...item,
+    selectedAttributes: item.variations
+      ?.map((variation: any) => {
+        const attribute = variation.productVariation?.attribute;
+
+        if (!attribute) {
+          return null;
+        }
+
+        return {
+          attributeName: attribute.name,
+          attributeValue: variation.productVariation.attributeValue,
+        };
+      })
+      .filter(Boolean) ?? [],
+  })),
+});
+
 export const createOrderService = async (
   userId: string,
   data: CreateOrderDto
@@ -287,7 +308,11 @@ export const createOrderService = async (
             product: true,
             variations: {
               include: {
-                productVariation: true,
+                productVariation: {
+                  include: {
+                    attribute: true,
+                  },
+                },
               },
             },
           },
@@ -349,6 +374,15 @@ export const getAllOrdersService = async (
         orderItems: {
           include: {
             product: true,
+            variations: {
+              include: {
+                productVariation: {
+                  include: {
+                    attribute: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -357,7 +391,7 @@ export const getAllOrdersService = async (
   ]);
 
   return {
-    orders,
+    orders: orders.map(attachSelectedAttributes),
     meta: {
       total,
       page,
@@ -376,7 +410,7 @@ export const getOrdersByCustomerService = async (userId: string) => {
     throw new AppError(404, 'Customer not found');
   }
 
-  return prisma.order.findMany({
+  const orders = await prisma.order.findMany({
     where: { customerId: customer.id },
     orderBy: { createdAt: 'desc' },
     include: {
@@ -387,10 +421,21 @@ export const getOrdersByCustomerService = async (userId: string) => {
       orderItems: {
         include: {
           product: true,
+          variations: {
+            include: {
+              productVariation: {
+                include: {
+                  attribute: true,
+                },
+              },
+            },
+          },
         },
       },
     },
   });
+
+  return orders.map(attachSelectedAttributes);
 };
 
 export const getOrderByIdService = async (orderId: string, userId?: string, roles?: string[]) => {
@@ -414,7 +459,13 @@ export const getOrderByIdService = async (orderId: string, userId?: string, role
         include: {
           product: true,
           variations: {
-            include: { productVariation: true },
+            include: {
+              productVariation: {
+                include: {
+                  attribute: true,
+                },
+              },
+            },
           },
         },
       },
@@ -444,7 +495,7 @@ export const getOrderByIdService = async (orderId: string, userId?: string, role
     expected = d;
   }
 
-  return { ...order, expectedDeliveryDate: expected };
+  return attachSelectedAttributes({ ...order, expectedDeliveryDate: expected });
 };
 
 export const updateOrderStatusService = async (orderId: string, status: any) => {
