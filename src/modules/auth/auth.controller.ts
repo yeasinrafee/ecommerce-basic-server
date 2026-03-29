@@ -229,7 +229,16 @@ const getCustomerMe = async (req: Request, res: Response) => {
 		throw new AppError(404, 'User not found');
 	}
 
-	const customer = await prisma.customer.findUnique({ where: { userId }, include: { addresses: true } });
+	const customer = await prisma.customer.findUnique({
+		where: { userId },
+		include: {
+			addresses: {
+				where: {
+					deletedAt: null
+				}
+			}
+		}
+	});
 	const admin = await prisma.admin.findUnique({ where: { userId } });
 
 	const name = admin?.name || userRecord.email.split('@')[0];
