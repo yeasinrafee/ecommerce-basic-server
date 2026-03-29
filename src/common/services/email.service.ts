@@ -1,17 +1,17 @@
-import nodemailer from 'nodemailer';
-import { env } from '../../config/env.js';
-import { createQueue, createWorker } from './mq.service.js';
-import type { Job } from 'bullmq';
+import nodemailer from "nodemailer";
+import { env } from "../../config/env.js";
+import { createQueue, createWorker } from "./mq.service.js";
+import type { Job } from "bullmq";
 
 interface EmailOptions {
   to: string | string[];
   subject: string;
   html?: string;
   text?: string;
-  attachments?: nodemailer.SendMailOptions['attachments'];
+  attachments?: nodemailer.SendMailOptions["attachments"];
 }
 
-export const emailQueue = createQueue('emailQueue', { verify: true });
+export const emailQueue = createQueue("emailQueue", { verify: true });
 
 class EmailService {
   private transporter: nodemailer.Transporter;
@@ -21,7 +21,7 @@ class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: env.mailHost,
-      port: 465, 
+      port: 465,
       secure: true,
       auth: {
         user: env.mailUser,
@@ -29,36 +29,40 @@ class EmailService {
       },
     });
 
-    this.transporter.verify().then(() => {
-      console.log('SMTP transporter verified');
-    }).catch((err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn('SMTP transporter verification failed', msg);
-    });
+    this.transporter
+      .verify()
+      .then(() => {
+        console.log("SMTP transporter verified");
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn("SMTP transporter verification failed", msg);
+      });
   }
-
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
       if (!env.mailHost || !env.mailUser || !env.mailPass) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('DEV EMAIL (not sent) ->', {
+        if (process.env.NODE_ENV === "development") {
+          console.log("DEV EMAIL (not sent) ->", {
             to: options.to,
             subject: options.subject,
-            text: options.text ?? this.stripHtml(options.html ?? ''),
-            html: options.html
+            text: options.text ?? this.stripHtml(options.html ?? ""),
+            html: options.html,
           });
           return true;
         }
-        throw new Error('Mail configuration missing (mailHost/mailUser/mailPass)');
+        throw new Error(
+          "Mail configuration missing (mailHost/mailUser/mailPass)",
+        );
       }
 
       const mailOptions: nodemailer.SendMailOptions = {
-        from: `${env.mailFrom ? `"${env.mailFrom.split('@')[0]}" <${env.mailFrom}>` : env.mailUser}`,
-        to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
+        from: `"${env.mailFrom}" <${env.mailUser}>`,
+        to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
         subject: options.subject,
         html: options.html ? this.applyBaseStyling(options.html) : undefined,
-        text: options.text ?? this.stripHtml(options.html ?? ''),
+        text: options.text ?? this.stripHtml(options.html ?? ""),
         attachments: options.attachments,
       };
 
@@ -83,13 +87,16 @@ class EmailService {
       throw lastErr;
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.error('Failed to send email:', msg);
+      console.error("Failed to send email:", msg);
       throw error;
     }
   }
 
   private stripHtml(html: string) {
-    return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return html
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   private applyBaseStyling(contentHtml: string): string {
@@ -184,7 +191,7 @@ class EmailService {
                 </tr>
                 <tr>
                   <td class="email-footer">
-                    <p>&copy; ${new Date().getFullYear()} ${env.mailFrom.split('@')[0]}. All rights reserved.</p>
+                    <p>&copy; ${new Date().getFullYear()} ${env.mailFrom.split("@")[0]}. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -197,13 +204,17 @@ class EmailService {
   }
 
   async queueEmail(options: EmailOptions): Promise<void> {
-    await emailQueue.add('sendEmail', options);
+    await emailQueue.add("sendEmail", options);
   }
 
-  async sendOtpEmail(to: string, otp: string, expiryMinutes?: number): Promise<boolean> {
-    const minutes = typeof expiryMinutes === 'number' ? expiryMinutes : 15;
+  async sendOtpEmail(
+    to: string,
+    otp: string,
+    expiryMinutes?: number,
+  ): Promise<boolean> {
+    const minutes = typeof expiryMinutes === "number" ? expiryMinutes : 15;
     const expiryDate = new Date(Date.now() + minutes * 60 * 1000);
-    const expiryText = `within the next ${minutes} minute${minutes === 1 ? '' : 's'}`;
+    const expiryText = `within the next ${minutes} minute${minutes === 1 ? "" : "s"}`;
 
     const html = `
       <h2 style="margin-bottom: 20px;">Your One-Time Password (OTP)</h2>
@@ -218,12 +229,16 @@ class EmailService {
 
     return this.sendEmail({
       to,
-      subject: `Your OTP Code (expires in ${minutes} min)` ,
+      subject: `Your OTP Code (expires in ${minutes} min)`,
       html,
     });
   }
 
-  async sendInvoiceEmail(to: string, userName: string, pdfBuffer: Buffer): Promise<boolean> {
+  async sendInvoiceEmail(
+    to: string,
+    userName: string,
+    pdfBuffer: Buffer,
+  ): Promise<boolean> {
     const html = `
       <h3>Invoice Ready</h3>
       <p>Hello \${userName},</p>
@@ -233,13 +248,13 @@ class EmailService {
 
     return this.sendEmail({
       to,
-      subject: 'Your Invoice',
+      subject: "Your Invoice",
       html,
       attachments: [
         {
-          filename: 'invoice.pdf',
+          filename: "invoice.pdf",
           content: pdfBuffer,
-          contentType: 'application/pdf',
+          contentType: "application/pdf",
         },
       ],
     });
@@ -249,11 +264,11 @@ class EmailService {
 export const emailService = new EmailService();
 
 export const emailWorker = createWorker(
-  'emailQueue',
+  "emailQueue",
   async (job: Job) => {
     const data = job.data as EmailOptions;
     await emailService.sendEmail(data);
   },
   5,
-  { verify: true }
+  { verify: true },
 );
