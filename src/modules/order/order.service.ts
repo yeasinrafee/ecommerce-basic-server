@@ -45,8 +45,8 @@ export const createOrderService = async (
     let zoneId = '';
 
     if (finalAddressId) {
-      const existingAddress = await tx.address.findUnique({
-        where: { id: finalAddressId, customerId: customer.id },
+      const existingAddress = await tx.address.findFirst({
+        where: { id: finalAddressId, customerId: customer.id, deletedAt: null },
       });
       if (!existingAddress) {
         throw new AppError(404, 'Provided address not found or does not belong to the customer');

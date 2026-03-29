@@ -11,7 +11,10 @@ const generateUniqueSlugTx = async (tx: Prisma.TransactionClient, name: string) 
 	let counter = 1;
 
 	while (true) {
-		const found = await tx.product.findFirst({ where: { slug }, select: { id: true } });
+		const found = await tx.product.findFirst({
+			where: { slug, deletedAt: null },
+			select: { id: true }
+		});
 		if (!found) {
 			return slug;
 		}
@@ -55,7 +58,10 @@ const createProduct = async (payload: CreateProductDto) => {
 		}
 
 		if (payload.sku) {
-			const existingSku = await tx.product.findFirst({ where: { sku: payload.sku }, select: { id: true } });
+			const existingSku = await tx.product.findFirst({
+				where: { sku: payload.sku, deletedAt: null },
+				select: { id: true }
+			});
 			if (existingSku) {
 				throw new AppError(400, 'SKU already exists', [
 					{ message: 'Another product uses the provided SKU', code: 'SKU_CONFLICT' }
@@ -582,7 +588,7 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 
 		if (payload.sku) {
 			const existingSku = await tx.product.findFirst({
-				where: { sku: payload.sku, id: { not: id } },
+				where: { sku: payload.sku, id: { not: id }, deletedAt: null },
 				select: { id: true }
 			});
 			if (existingSku) {
@@ -770,7 +776,9 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 				await tx.productVariation.createMany({ data: toCreate });
 			}
 		} else {
-			const existingVars = await tx.productVariation.findMany({ where: { productId: id } });
+			const existingVars = await tx.productVariation.findMany({
+				where: { productId: id, deletedAt: null }
+			});
 			for (const v of existingVars) {
 				const finalPrice = calculateFinalPrice(v.basePrice, payload.discountType, payload.discountValue);
 				await tx.productVariation.update({ where: { id: v.id }, data: { finalPrice } });

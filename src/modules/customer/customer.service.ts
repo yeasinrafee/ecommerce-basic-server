@@ -160,7 +160,8 @@ const getCustomerAddressesByUserId = async (userId: string) => {
 
     return prisma.address.findMany({
         where: {
-            customerId: customer.id
+            customerId: customer.id,
+            deletedAt: null
         },
         orderBy: {
             createdAt: "desc"
@@ -195,9 +196,12 @@ const deleteCustomerAddressByUserId = async (userId: string, addressId: string) 
             throw new AppError(404, "Address not found");
         }
 
-        return tx.address.delete({
+        return tx.address.update({
             where: {
                 id: addressId
+            },
+            data: {
+                deletedAt: new Date()
             }
         });
     });
