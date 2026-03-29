@@ -46,8 +46,8 @@ const layout = (title: string, content: string) => `
       ${content}
     </div>
     <div style="${footerStyle}">
-      <p style="margin: 0;">If you have any questions, please contact our support team.</p>
-      <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} ${env.mailFrom.split('@')[0]}. All rights reserved.</p>
+      <p style="margin: 0;">For more details, visit <a href="https://${env.companyWebsite}" style="color: #007bff; text-decoration: none;">${env.companyWebsite}</a>.</p>
+      <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} ${env.companyName}. All rights reserved.</p>
     </div>
   </div>
 `;
