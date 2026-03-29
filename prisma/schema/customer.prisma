@@ -4,8 +4,8 @@ model Customer {
     userId    String   @unique
     name      String
     image     String?
-    phone     String? @unique
-    status    Status @default(ACTIVE)
+    phone     String?  @unique
+    status    Status   @default(ACTIVE)
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
@@ -17,16 +17,17 @@ model Customer {
 }
 
 model Address {
-    id            String   @id @default(uuid())
-    customer      Customer @relation(fields: [customerId], references: [id])
+    id            String    @id @default(uuid())
+    customer      Customer  @relation(fields: [customerId], references: [id])
     customerId    String
-    zone          Zone     @relation(fields: [zoneId], references: [id])
+    zone          Zone      @relation(fields: [zoneId], references: [id])
     zoneId        String
     postCode      String
     flatNumber    String?
     streetAddress String
-    createdAt     DateTime @default(now())
-    updatedAt     DateTime @updatedAt
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+    deletedAt     DateTime?
 
     orders Order[]
 }
