@@ -46,8 +46,8 @@ const layout = (title: string, content: string) => `
       ${content}
     </div>
     <div style="${footerStyle}">
-      <p style="margin: 0;">If you have any questions, please contact our support team.</p>
-      <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} ${env.mailFrom.split('@')[0]}. All rights reserved.</p>
+      <p style="margin: 0;">For more details, visit <a href="https://${env.companyWebsite}" style="color: #007bff; text-decoration: none;">${env.companyWebsite}</a>.</p>
+      <p style="margin: 5px 0 0 0;">&copy; ${new Date().getFullYear()} ${env.companyName}. All rights reserved.</p>
     </div>
   </div>
 `;
@@ -80,9 +80,6 @@ export const orderEmailTemplates = {
         <p style="margin: 0; font-size: 14px; color: #333;"><strong>Order Status:</strong> Confirmed</p>
         <p style="margin: 5px 0 0 0; font-size: 14px; color: #333;"><strong>Total Amount:</strong> $${amount}</p>
       </div>
-      <p style="font-size: 14px; color: #555; line-height: 1.5;">
-        You'll receive another email with a tracking number as soon as it ships.
-      </p>
     `;
     return layout('Order Confirmed!', content);
   },
@@ -91,12 +88,8 @@ export const orderEmailTemplates = {
     const content = `
       <p style="font-size: 16px; color: #333; margin-top: 0;">Hi <strong>${customerName}</strong>,</p>
       <p style="font-size: 14px; color: #555; line-height: 1.5;">
-        Exciting news! Your order is on its way.
+        Exciting news! Your order is shipped and on its way.
       </p>
-      <div style="${summaryBoxStyle('#17a2b8')}">
-        <p style="margin: 0; font-size: 14px; color: #333;"><strong>Order Status:</strong> Shipped</p>
-        ${trackingNumber ? `<p style="margin: 5px 0 0 0; font-size: 14px; color: #333;"><strong>Tracking Number:</strong> ${trackingNumber}</p>` : ''}
-      </div>
       <p style="font-size: 14px; color: #555; line-height: 1.5;">
         You can expect your delivery soon.
       </p>

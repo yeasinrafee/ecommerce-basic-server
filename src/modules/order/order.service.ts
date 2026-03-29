@@ -3,9 +3,10 @@ import { AppError } from '../../common/errors/app-error.js';
 import { DiscountType } from '@prisma/client';
 import type { CreateOrderDto } from './order.types.js';
 import type { PrismaClient } from '@prisma/client';
-import { emailService, emailQueue } from '../../common/services/email.service.js';
+import { emailQueue } from '../../common/services/email.service.js';
 import { orderEmailTemplates } from './order.email-templates.js';
 import { notificationService } from '../notification/notification.service.js';
+import { orderEmailQueue } from './order-invoice-email.service.js';
 
 const attachSelectedAttributes = (order: any) => ({
   ...order,
@@ -325,11 +326,16 @@ export const createOrderService = async (
     return attachSelectedAttributes({ ...order, zonePolicy });
   });
 
-  void emailService.sendEmail({
-    to: result.customerEmail || '',
-    subject: `Order Placed Successfully`,
-    html: orderEmailTemplates.orderPlaced(result.customerName, result.finalAmount),
-  });
+  void orderEmailQueue
+    .add(
+      'sendOrderPlacedEmailWithInvoice',
+      { orderId: result.id },
+      { jobId: `order-placed-email-${result.id}` },
+    )
+    .catch((error: unknown) => {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Failed to enqueue order placed invoice email', msg);
+    });
 
   void notificationService.addNotification(
     'New Order Placed',
@@ -350,6 +356,7 @@ export const getAllOrdersService = async (
 
   if (searchTerm) {
     where.OR = [
+      { id: { contains: searchTerm, mode: 'insensitive' } },
       { customerName: { contains: searchTerm, mode: 'insensitive' } },
       { customerEmail: { contains: searchTerm, mode: 'insensitive' } },
       { customerPhone: { contains: searchTerm, mode: 'insensitive' } },

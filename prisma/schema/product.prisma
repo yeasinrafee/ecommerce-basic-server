@@ -17,7 +17,7 @@ model Product {
   width             Float?
   height            Float?
   volume            Float?
-  sku               String?       @unique
+  sku               String?       
   discountStartDate DateTime?
   discountEndDate   DateTime?
   brandId           String?
