@@ -320,10 +320,9 @@ export const createOrderService = async (
       },
     });
 
-    // attach the chosen zone policy details used for shipping
     const zonePolicy = zonePolicyLink?.zonePolicy ?? null;
 
-    return { ...order, zonePolicy };
+    return attachSelectedAttributes({ ...order, zonePolicy });
   });
 
   void emailService.sendEmail({
