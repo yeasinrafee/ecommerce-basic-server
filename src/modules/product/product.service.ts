@@ -50,11 +50,13 @@ const parseVariantPrice = (val: unknown, fallback: number) => {
 
 const createProduct = async (payload: CreateProductDto) => {
 	return prisma.$transaction(async (tx) => {
-		const brand = await tx.brand.findUnique({ where: { id: payload.brandId }, select: { id: true } });
-		if (!brand) {
-			throw new AppError(400, 'Brand not found', [
-				{ message: 'Provided brandId does not match any brand', code: 'BRAND_NOT_FOUND' }
-			]);
+		if (payload.brandId) {
+			const brand = await tx.brand.findUnique({ where: { id: payload.brandId }, select: { id: true } });
+			if (!brand) {
+				throw new AppError(400, 'Brand not found', [
+					{ message: 'Provided brandId does not match any brand', code: 'BRAND_NOT_FOUND' }
+				]);
+			}
 		}
 
 		if (payload.sku) {
@@ -141,7 +143,7 @@ const createProduct = async (payload: CreateProductDto) => {
 				sku: payload.sku ?? null,
 				discountStartDate: payload.discountStartDate ?? null,
 				discountEndDate: payload.discountEndDate ?? null,
-				brandId: payload.brandId,
+				...(payload.brandId !== undefined && { brandId: payload.brandId }),
 				image: payload.image,
 				galleryImages: payload.galleryImages,
 				status: payload.status,
@@ -579,11 +581,13 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 			]);
 		}
 
-		const brand = await tx.brand.findUnique({ where: { id: payload.brandId }, select: { id: true } });
-		if (!brand) {
-			throw new AppError(400, 'Brand not found', [
-				{ message: 'Provided brandId does not match any brand', code: 'BRAND_NOT_FOUND' }
-			]);
+		if (payload.brandId !== undefined) {
+			const brand = await tx.brand.findUnique({ where: { id: payload.brandId }, select: { id: true } });
+			if (!brand) {
+				throw new AppError(400, 'Brand not found', [
+					{ message: 'Provided brandId does not match any brand', code: 'BRAND_NOT_FOUND' }
+				]);
+			}
 		}
 
 		if (payload.sku) {
@@ -671,7 +675,7 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 				sku: payload.sku ?? null,
 				discountStartDate: payload.discountStartDate ?? null,
 				discountEndDate: payload.discountEndDate ?? null,
-				brandId: payload.brandId,
+				...(payload.brandId !== undefined && { brandId: payload.brandId }),
 				image: payload.image,
 				galleryImages: payload.galleryImages,
 				status: payload.status,

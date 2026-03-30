@@ -37,7 +37,7 @@ export type CreateProductDto = {
 	length?: number | null;
 	width?: number | null;
 	height?: number | null;
-	brandId: string;
+	brandId?: string;
 	image: string;
 	galleryImages: string[];
 	status: Status;
@@ -77,7 +77,7 @@ export type UpdateProductDto = {
 	length?: number | null;
 	width?: number | null;
 	height?: number | null;
-	brandId: string;
+	brandId?: string;
 	image: string;
 	galleryImages: string[];
 	status: Status;

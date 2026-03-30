@@ -61,7 +61,12 @@ const createProductBodySchema = z.object({
 	length: nullablePositiveNumberSchema,
 	width: nullablePositiveNumberSchema,
 	height: nullablePositiveNumberSchema,
-	brandId: z.string().trim().min(1, 'Brand is required'),
+	brandId: z.preprocess((value) => {
+		if (value === '' || value === null || value === undefined) {
+			return undefined;
+		}
+		return String(value).trim();
+	}, z.string().min(1).optional()),
 	status: z.enum(['ACTIVE', 'INACTIVE']),
 	stockStatus: z.enum(['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK']),
 	categories: z.array(z.string().trim().min(1)).min(1, 'At least one category is required'),
@@ -413,7 +418,12 @@ const updateProductBodySchema = z.object({
 	length: nullablePositiveNumberSchema,
 	width: nullablePositiveNumberSchema,
 	height: nullablePositiveNumberSchema,
-	brandId: z.string().trim().min(1, 'Brand is required'),
+	brandId: z.preprocess((value) => {
+		if (value === '' || value === null || value === undefined) {
+			return undefined;
+		}
+		return String(value).trim();
+	}, z.string().min(1).optional()),
 	status: z.enum(['ACTIVE', 'INACTIVE']),
 	stockStatus: z.enum(['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK']),
 	categories: z.array(z.string().trim().min(1)).min(1, 'At least one category is required'),
