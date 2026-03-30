@@ -43,7 +43,7 @@ export type CreateProductDto = {
 	status: Status;
 	stockStatus: StockStatus;
 	categoryIds: string[];
-	tagIds: string[];
+	tagIds?: string[];
 	attributes: CreateProductAttributeDto[];
 	additionalInformations: CreateProductAdditionalInfoDto[];
 	seo?: CreateProductSeoDto | null;
@@ -83,7 +83,7 @@ export type UpdateProductDto = {
 	status: Status;
 	stockStatus: StockStatus;
 	categoryIds: string[];
-	tagIds: string[];
+	tagIds?: string[];
 	attributes: UpdateProductAttributeDto[];
 	additionalInformations: CreateProductAdditionalInfoDto[];
 	seo?: CreateProductSeoDto | null;

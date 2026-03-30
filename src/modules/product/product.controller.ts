@@ -65,7 +65,7 @@ const createProductBodySchema = z.object({
 	status: z.enum(['ACTIVE', 'INACTIVE']),
 	stockStatus: z.enum(['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK']),
 	categories: z.array(z.string().trim().min(1)).min(1, 'At least one category is required'),
-	tags: z.array(z.string().trim().min(1)).min(1, 'At least one tag is required'),
+	tags: z.array(z.string().trim().min(1)).optional(),
 	galleryImagesMeta: z.array(z.object({ id: z.string().trim().min(1), name: z.string().trim().min(1) })),
 	attributes: z.array(
 		z.object({
