@@ -74,12 +74,12 @@ const login = async (req: Request, res: Response) => {
 };
 
 const refreshToken = async (req: Request, res: Response) => {
-	const token = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken.trim() : '';
+	const token = typeof req.cookies?.refreshToken === 'string' ? req.cookies.refreshToken.trim() : '';
 
 	if (!token) {
 		throw new AppError(400, 'Refresh token is required', [
 			{
-				message: 'Provide a valid refresh token in the request body',
+				message: 'Provide a valid refreshToken cookie',
 				code: 'REFRESH_TOKEN_REQUIRED'
 			}
 		]);
