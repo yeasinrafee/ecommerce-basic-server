@@ -70,7 +70,7 @@ const createProduct = async (payload: CreateProductDto) => {
 		}
 
 		const categoryIds = Array.from(new Set(payload.categoryIds));
-		const tagIds = Array.from(new Set(payload.tagIds));
+		const tagIds = Array.from(new Set(payload.tagIds ?? []));
 
 		const [categories, tags] = await Promise.all([
 			tx.productCategory.findMany({ where: { id: { in: categoryIds } }, select: { id: true } }),
@@ -599,7 +599,7 @@ const updateProduct = async (id: string, payload: UpdateProductDto) => {
 		}
 
 		const categoryIds = Array.from(new Set(payload.categoryIds));
-		const tagIds = Array.from(new Set(payload.tagIds));
+		const tagIds = Array.from(new Set(payload.tagIds ?? []));
 
 		const [categories, tags] = await Promise.all([
 			tx.productCategory.findMany({ where: { id: { in: categoryIds } }, select: { id: true } }),

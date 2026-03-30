@@ -11,6 +11,7 @@ const router = Router();
 const upload = createUploadMiddleware({ maxFileSizeInMB: 5, maxFileCount: 1 });
 
 router.get('/get-all-paginated', asyncHandler(productCategoryController.getCategories));
+router.get('/get-parent-categories-paginated', asyncHandler(productCategoryController.getParentCategories));
 router.get('/get-all', asyncHandler(productCategoryController.getAllCategories));
 router.get('/get/:id', asyncHandler(productCategoryController.getCategory));
 router.post(

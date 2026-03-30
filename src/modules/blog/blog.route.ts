@@ -16,7 +16,7 @@ router.get('/get-all-paginated', asyncHandler(blogController.getBlogs));
 router.get('/get-all', asyncHandler(blogController.getAllBlogs));
 router.get('/recent', asyncHandler(blogController.getRecentBlogs));
 router.get('/get/:slug', asyncHandler(blogController.getBlogBySlug));
-router.get('/get/:id', asyncHandler(blogController.getBlog));
+router.get('/get-by-id/:id', asyncHandler(blogController.getBlog));
 router.post(
 	'/create',
 	authenticate,

@@ -111,6 +111,26 @@ const getCategories = async (req: Request, res: Response) => {
     });
 };
 
+const getParentCategories = async (req: Request, res: Response) => {
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 10);
+    const searchTerm = typeof req.query.searchTerm === 'string' ? req.query.searchTerm : undefined;
+
+    const result = await productCategoryService.getParentCategories({ page, limit, searchTerm });
+
+    sendResponse({
+        res,
+        statusCode: 200,
+        success: true,
+        message: 'Categories fetched',
+        data: result.data,
+        meta: {
+            ...result.meta,
+            timestamp: new Date().toISOString()
+        }
+    });
+};
+
 const getCategory = async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const cat = await productCategoryService.getCategoryById(id);
@@ -153,6 +173,7 @@ export const productCategoryController = {
     createCategory,
     updateCategory,
     getCategories,
+    getParentCategories,
     getCategory,
     getAllCategories,
     deleteCategory
