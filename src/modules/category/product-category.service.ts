@@ -61,6 +61,35 @@ const getCategories = async ({ page = 1, limit = 10, searchTerm }: CategoryListQ
     };
 };
 
+const getParentCategories = async ({ page = 1, limit = 10, searchTerm }: CategoryListQuery = {}): Promise<ServiceListResult<any>> => {
+    const skip = (page - 1) * limit;
+    const where: Prisma.ProductCategoryWhereInput = {
+        parentId: null,
+        ...(searchTerm ? { name: { contains: searchTerm, mode: 'insensitive' } } : {})
+    };
+
+    const [data, total] = await Promise.all([
+        prisma.productCategory.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: { createdAt: 'desc' },
+            include: { subCategories: true }
+        }),
+        prisma.productCategory.count({ where })
+    ]);
+
+    return {
+        data,
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages: Math.max(1, Math.ceil(total / limit))
+        }
+    };
+};
+
 const getCategoryById = async (id: string) => {
     return prisma.productCategory.findUnique({ where: { id } });
 };
@@ -228,6 +257,7 @@ const getAllCategories = async () => {
 
 export const productCategoryService = {
     getCategories,
+    getParentCategories,
     getCategoryById,
     getAllCategories,
     createCategory,
