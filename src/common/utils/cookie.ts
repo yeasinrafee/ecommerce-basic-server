@@ -26,10 +26,13 @@ const parseDuration = (value: string): number => {
 };
 
 export const setAuthCookies = (res: Response, tokens: AuthTokens) => {
+  const sameSite: CookieOptions['sameSite'] = env.cookieSameSite ?? (env.isProduction ? 'strict' : 'lax');
+  const secure = env.cookieSecure ?? env.isProduction;
+
   const baseOpts: CookieOptions = {
     httpOnly: true,
-    secure: env.isProduction,
-    sameSite: env.isProduction ? 'strict' : 'lax',
+    secure,
+    sameSite,
     path: '/',
     domain: env.cookieDomain || undefined
   };
@@ -45,10 +48,13 @@ export const setAuthCookies = (res: Response, tokens: AuthTokens) => {
 };
 
 export const clearAuthCookies = (res: Response) => {
+  const sameSite: CookieOptions['sameSite'] = env.cookieSameSite ?? (env.isProduction ? 'strict' : 'lax');
+  const secure = env.cookieSecure ?? env.isProduction;
+
   const baseOpts: CookieOptions = {
     httpOnly: true,
-    secure: env.isProduction,
-    sameSite: env.isProduction ? 'strict' : 'lax',
+    secure,
+    sameSite,
     path: '/',
     domain: env.cookieDomain || undefined
   };

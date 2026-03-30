@@ -1,4 +1,5 @@
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import express from 'express';
 import { pinoHttp } from 'pino-http';
 import { env } from './config/env.js';
@@ -17,6 +18,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 app.use(
   pinoHttp({
     logger

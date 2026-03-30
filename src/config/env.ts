@@ -9,6 +9,40 @@ const parseCorsOrigins = (value: string): string[] => {
     .filter((item) => item.length > 0);
 };
 
+const parseBoolean = (value: string | undefined): boolean | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === 'true' || normalized === '1') {
+    return true;
+  }
+
+  if (normalized === 'false' || normalized === '0') {
+    return false;
+  }
+
+  return undefined;
+};
+
+const parseCookieSameSite = (
+  value: string | undefined
+): 'lax' | 'strict' | 'none' | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === 'lax' || normalized === 'strict' || normalized === 'none') {
+    return normalized;
+  }
+
+  return undefined;
+};
+
 const required = (value: string | undefined, key: string): string => {
   if (!value) {
     throw new Error(`Missing environment variable: ${key}`);
@@ -33,6 +67,8 @@ export const env = {
   jwtAccessExpires: required(process.env.JWT_ACCESS_EXPIRES, 'JWT_ACCESS_EXPIRES'),
   jwtRefreshExpires: required(process.env.JWT_REFRESH_EXPIRES, 'JWT_REFRESH_EXPIRES'),
   cookieDomain: process.env.COOKIE_DOMAIN,
+  cookieSameSite: parseCookieSameSite(process.env.COOKIE_SAME_SITE),
+  cookieSecure: parseBoolean(process.env.COOKIE_SECURE),
   mailHost: required(process.env.MAIL_HOST, 'MAIL_HOST'),
   mailUser: required(process.env.MAIL_USER, 'MAIL_USER'),
   mailPass: required(process.env.MAIL_PASS, 'MAIL_PASS'),
