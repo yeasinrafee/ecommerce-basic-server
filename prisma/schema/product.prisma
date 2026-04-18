@@ -40,6 +40,8 @@ model Product {
   wishlistItems WishlistItem[]
 
   orderItems OrderItem[]
+
+  offerProducts OfferProduct[]
 }
 
 model ProductReview {
