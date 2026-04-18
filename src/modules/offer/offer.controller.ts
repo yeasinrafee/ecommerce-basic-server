@@ -61,6 +61,8 @@ const optionalNullableDateSchema = z.preprocess((value) => {
 	return new Date(String(value));
 }, z.date().nullable().optional());
 
+const getDateKey = (value: Date | null | undefined) => value ? value.toISOString().slice(0, 10) : null;
+
 const statusSchema = z.preprocess((value) => {
 	if (value === '' || value === undefined) {
 		return undefined;
@@ -128,7 +130,10 @@ const createOfferBodySchema = z.object({
 		});
 	}
 
-	if (data.discountStartDate && data.discountEndDate && data.discountEndDate < data.discountStartDate) {
+	const startDateKey = getDateKey(data.discountStartDate);
+	const endDateKey = getDateKey(data.discountEndDate);
+
+	if (startDateKey && endDateKey && endDateKey < startDateKey) {
 		ctx.addIssue({
 			code: z.ZodIssueCode.custom,
 			path: ['discountEndDate'],
@@ -161,7 +166,10 @@ const updateOfferBodySchema = z.object({
 		});
 	}
 
-	if (data.discountStartDate && data.discountEndDate && data.discountEndDate < data.discountStartDate) {
+	const startDateKey = getDateKey(data.discountStartDate);
+	const endDateKey = getDateKey(data.discountEndDate);
+
+	if (startDateKey && endDateKey && endDateKey < startDateKey) {
 		ctx.addIssue({
 			code: z.ZodIssueCode.custom,
 			path: ['discountEndDate'],

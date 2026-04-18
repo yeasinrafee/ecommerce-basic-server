@@ -61,7 +61,10 @@ const resolveOfferDiscount = (
 		]);
 	}
 
-	if (discountStartDate && discountEndDate && discountEndDate < discountStartDate) {
+	const discountStartDateKey = toDateKey(discountStartDate);
+	const discountEndDateKey = toDateKey(discountEndDate);
+
+	if (discountStartDateKey && discountEndDateKey && discountEndDateKey < discountStartDateKey) {
 		throw new AppError(400, 'Please fix the discount dates', [
 			{ message: 'The end date must be the same as or later than the start date.', code: 'INVALID_DISCOUNT_RANGE' }
 		]);
