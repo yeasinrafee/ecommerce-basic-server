@@ -25,3 +25,9 @@ export type OfferListQuery = {
 	page?: number;
 	limit?: number;
 };
+
+export type OfferProductSearchQuery = {
+	page?: number;
+	limit?: number;
+	searchTerm?: string;
+};

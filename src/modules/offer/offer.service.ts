@@ -1,7 +1,7 @@
 import type { DiscountType, Prisma, Status } from '@prisma/client';
 import { prisma } from '../../config/prisma.js';
 import { AppError } from '../../common/errors/app-error.js';
-import type { BulkUpdateOfferStatusDto, CreateOfferDto, OfferListQuery, UpdateOfferDto } from './offer.types.js';
+import type { BulkUpdateOfferStatusDto, CreateOfferDto, OfferListQuery, OfferProductSearchQuery, UpdateOfferDto } from './offer.types.js';
 
 const offerInclude: Prisma.OfferInclude = {
 	offerProducts: {
@@ -12,6 +12,17 @@ const offerInclude: Prisma.OfferInclude = {
 			product: true
 		}
 	}
+};
+
+const offerProductSearchInclude: Prisma.ProductInclude = {
+	brand: true,
+	categories: { include: { category: true } },
+	tags: { include: { tag: true } },
+	additionalInformations: true,
+	seos: true,
+	productVariations: { where: { deletedAt: null }, include: { attribute: true } },
+	productReviews: { include: { user: true } },
+	offerProducts: { include: { offer: true } }
 };
 
 const normalizeIds = (values: string[]) => Array.from(new Set(values.map((value) => String(value).trim()).filter(Boolean)));
@@ -255,6 +266,43 @@ const getOffers = async ({ page = 1, limit = 10 }: OfferListQuery = {}) => {
 	};
 };
 
+const getOfferProductsForSearch = async ({ page = 1, limit = 8, searchTerm }: OfferProductSearchQuery = {}) => {
+	const skip = (page - 1) * limit;
+	const trimmedSearchTerm = searchTerm?.trim();
+	const where: Prisma.ProductWhereInput = {
+		deletedAt: null,
+		discountType: 'NONE'
+	};
+
+	if (trimmedSearchTerm) {
+		where.OR = [
+			{ name: { contains: trimmedSearchTerm, mode: 'insensitive' } },
+			{ sku: { contains: trimmedSearchTerm, mode: 'insensitive' } }
+		];
+	}
+
+	const [data, total] = await Promise.all([
+		prisma.product.findMany({
+			where,
+			skip,
+			take: limit,
+			orderBy: { createdAt: 'desc' },
+			include: offerProductSearchInclude
+		}),
+		prisma.product.count({ where })
+	]);
+
+	return {
+		data,
+		meta: {
+			page,
+			limit,
+			total,
+			totalPages: Math.max(1, Math.ceil(total / limit))
+		}
+	};
+};
+
 const getAllOffers = async () => {
 	return prisma.offer.findMany({
 		where: {
@@ -480,6 +528,7 @@ const bulkUpdateStatus = async (payload: BulkUpdateOfferStatusDto) => {
 
 export const offerService = {
 	getOffers,
+	getOfferProductsForSearch,
 	getAllOffers,
 	getOfferById,
 	createOffer,

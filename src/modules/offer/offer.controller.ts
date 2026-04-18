@@ -188,6 +188,44 @@ const getOffers = async (req: Request, res: Response) => {
 	});
 };
 
+const searchOfferProducts = async (req: Request, res: Response) => {
+	const page = Math.max(1, Number(req.query.page ?? 1));
+	const limit = Math.max(1, Number(req.query.limit ?? 8));
+	const searchTerm = req.query.searchTerm ? String(req.query.searchTerm).trim() : undefined;
+
+	if (!searchTerm) {
+		sendResponse({
+			res,
+			statusCode: 200,
+			success: true,
+			message: 'Products retrieved',
+			data: [],
+			meta: {
+				page,
+				limit,
+				total: 0,
+				totalPages: 0
+			}
+		});
+		return;
+	}
+
+	const result = await offerService.getOfferProductsForSearch({
+		page,
+		limit,
+		searchTerm
+	});
+
+	sendResponse({
+		res,
+		statusCode: 200,
+		success: true,
+		message: 'Products retrieved',
+		data: result.data,
+		meta: result.meta
+	});
+};
+
 const getAllOffers = async (req: Request, res: Response) => {
 	const data = await offerService.getAllOffers();
 	sendResponse({ res, statusCode: 200, success: true, message: 'All offers fetched', data });
@@ -256,6 +294,7 @@ const bulkUpdateStatus = async (req: Request, res: Response) => {
 
 export const offerController = {
 	getOffers,
+	searchOfferProducts,
 	getAllOffers,
 	getOffer,
 	createOffer,

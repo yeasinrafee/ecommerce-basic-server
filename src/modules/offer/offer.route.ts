@@ -7,6 +7,7 @@ import { offerController } from './offer.controller.js';
 const router = Router();
 
 router.get('/get-all-paginated', asyncHandler(offerController.getOffers));
+router.get('/search-products', asyncHandler(offerController.searchOfferProducts));
 router.get('/get-all', asyncHandler(offerController.getAllOffers));
 router.get('/get-one/:id', asyncHandler(offerController.getOffer));
 router.post('/create', authenticate, authorizeRoles(Role.SUPER_ADMIN, Role.ADMIN), asyncHandler(offerController.createOffer));
