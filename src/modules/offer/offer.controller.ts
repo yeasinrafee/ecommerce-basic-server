@@ -49,6 +49,14 @@ const nullableDateSchema = z.preprocess((value) => {
 	return new Date(String(value));
 }, z.date().nullable());
 
+const discountValueSchema = z.preprocess((value) => {
+	if (value === '' || value === null || value === undefined) {
+		return null;
+	}
+
+	return Number(value);
+}, z.number().nullable());
+
 const optionalNullableDateSchema = z.preprocess((value) => {
 	if (value === '' || value === undefined) {
 		return undefined;
@@ -62,6 +70,41 @@ const optionalNullableDateSchema = z.preprocess((value) => {
 }, z.date().nullable().optional());
 
 const getDateKey = (value: Date | null | undefined) => value ? value.toISOString().slice(0, 10) : null;
+
+const validateDiscountValue = (
+	discountType: DiscountType | null | undefined,
+	discountValue: number | null | undefined,
+	ctx: z.RefinementCtx
+) => {
+	if (discountType === null || discountType === undefined || discountType === 'NONE') {
+		return;
+	}
+
+	if (discountValue == null || Number.isNaN(discountValue)) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ['discountValue'],
+			message: 'Please enter a discount value.'
+		});
+		return;
+	}
+
+	if (discountValue <= 0) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ['discountValue'],
+			message: 'Discount value must be greater than 0.'
+		});
+	}
+
+	if (discountType === 'PERCENTAGE_DISCOUNT' && discountValue > 100) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ['discountValue'],
+			message: 'Percentage discount cannot be greater than 100.'
+		});
+	}
+};
 
 const statusSchema = z.preprocess((value) => {
 	if (value === '' || value === undefined) {
@@ -107,8 +150,14 @@ const productIdsSchema = z.preprocess((value) => {
 }, z.array(z.string().trim().min(1)));
 
 const createOfferBodySchema = z.object({
-	discountType: discountTypeSchema,
-	discountValue: nullableNumberSchema,
+	discountType: z.preprocess((value) => {
+		if (value === '' || value === null || value === undefined) {
+			return value;
+		}
+
+		return value as DiscountType;
+	}, z.enum(['PERCENTAGE_DISCOUNT', 'FLAT_DISCOUNT'])),
+	discountValue: discountValueSchema,
 	discountStartDate: nullableDateSchema,
 	discountEndDate: nullableDateSchema,
 	status: statusSchema,
@@ -122,13 +171,7 @@ const createOfferBodySchema = z.object({
 		});
 	}
 
-	if (data.discountType !== null && data.discountType !== 'NONE' && data.discountValue == null) {
-		ctx.addIssue({
-			code: z.ZodIssueCode.custom,
-			path: ['discountValue'],
-			message: 'Please enter a discount value for the selected discount type.'
-		});
-	}
+	validateDiscountValue(data.discountType, data.discountValue, ctx);
 
 	const startDateKey = getDateKey(data.discountStartDate);
 	const endDateKey = getDateKey(data.discountEndDate);
@@ -143,7 +186,17 @@ const createOfferBodySchema = z.object({
 });
 
 const updateOfferBodySchema = z.object({
-	discountType: optionalDiscountTypeSchema,
+	discountType: z.preprocess((value) => {
+		if (value === '' || value === undefined) {
+			return undefined;
+		}
+
+		if (value === null) {
+			return null;
+		}
+
+		return value as DiscountType;
+	}, z.enum(['PERCENTAGE_DISCOUNT', 'FLAT_DISCOUNT']).optional()),
 	discountValue: optionalNullableNumberSchema,
 	discountStartDate: optionalNullableDateSchema,
 	discountEndDate: optionalNullableDateSchema,
@@ -158,13 +211,7 @@ const updateOfferBodySchema = z.object({
 		});
 	}
 
-	if (data.discountType !== undefined && data.discountType !== null && data.discountType !== 'NONE' && data.discountValue == null) {
-		ctx.addIssue({
-			code: z.ZodIssueCode.custom,
-			path: ['discountValue'],
-			message: 'Please enter a discount value for the selected discount type.'
-		});
-	}
+	validateDiscountValue(data.discountType, data.discountValue, ctx);
 
 	const startDateKey = getDateKey(data.discountStartDate);
 	const endDateKey = getDateKey(data.discountEndDate);

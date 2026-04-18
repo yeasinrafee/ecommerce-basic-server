@@ -31,6 +31,30 @@ const toDateKey = (value: Date | null | undefined) => value ? value.toISOString(
 
 const formatDateOnly = (value: Date | null | undefined) => toDateKey(value) ?? 'no date';
 
+const validateResolvedDiscountValue = (discountType: DiscountType | null, discountValue: number | null) => {
+	if (discountType === null || discountType === 'NONE') {
+		return;
+	}
+
+	if (discountValue == null || !Number.isFinite(discountValue)) {
+		throw new AppError(400, 'Please add a discount value', [
+			{ message: 'Choose a discount value because the discount type is not NONE.', code: 'DISCOUNT_VALUE_REQUIRED' }
+		]);
+	}
+
+	if (discountValue <= 0) {
+		throw new AppError(400, 'Please add a valid discount value', [
+			{ message: 'Discount value must be greater than 0.', code: 'DISCOUNT_VALUE_INVALID' }
+		]);
+	}
+
+	if (discountType === 'PERCENTAGE_DISCOUNT' && discountValue > 100) {
+		throw new AppError(400, 'Please add a valid discount value', [
+			{ message: 'Percentage discount cannot be greater than 100.', code: 'DISCOUNT_VALUE_INVALID' }
+		]);
+	}
+};
+
 const rangesOverlap = (
 	leftStart: Date | null | undefined,
 	leftEnd: Date | null | undefined,
@@ -55,11 +79,7 @@ const resolveOfferDiscount = (
 	const discountEndDate = payload.discountEndDate !== undefined ? payload.discountEndDate : existing?.discountEndDate ?? null;
 	const status = payload.status !== undefined ? payload.status : existing?.status ?? 'ACTIVE';
 
-	if (discountType !== null && discountType !== 'NONE' && discountValue == null) {
-		throw new AppError(400, 'Please add a discount value', [
-			{ message: 'Choose a discount value because the discount type is not NONE.', code: 'DISCOUNT_VALUE_REQUIRED' }
-		]);
-	}
+	validateResolvedDiscountValue(discountType, discountValue);
 
 	const discountStartDateKey = toDateKey(discountStartDate);
 	const discountEndDateKey = toDateKey(discountEndDate);
