@@ -5,6 +5,105 @@ import { AppError } from '../../common/errors/app-error.js';
 import type { Prisma } from '@prisma/client';
 import type { CreateProductDto, UpdateProductDto, PatchProductDto, BulkPatchProductDto, ProductListQuery } from './product.types.js';
 
+const offerProductInclude = {
+	offerProducts: {
+		include: {
+			offer: true
+		}
+	}
+};
+
+const getDateOnlyKey = (value: Date | null | undefined) => {
+	if (!value) {
+		return null;
+	}
+
+	return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+};
+
+const isDateWithinRange = (current: Date, startDate: Date | null, endDate: Date | null) => {
+	const currentKey = getDateOnlyKey(current) as string;
+	const startKey = getDateOnlyKey(startDate) ?? '0000-01-01';
+	const endKey = getDateOnlyKey(endDate) ?? '9999-12-31';
+
+	return currentKey >= startKey && currentKey <= endKey;
+};
+
+const getInactiveOfferPayload = () => ({
+	id: null,
+	discountType: 'NONE' as const,
+	discountValue: null,
+	discountStartDate: null,
+	discountEndDate: null,
+	finalPrice: null,
+	status: 'INACTIVE' as const
+});
+
+const getResolvedOfferPayload = (offer: {
+	id: string;
+	discountType: any;
+	discountValue: number | null;
+	discountStartDate: Date | null;
+	discountEndDate: Date | null;
+	status: 'ACTIVE' | 'INACTIVE';
+	finalPrice?: number | null;
+}) => ({
+	id: offer.id,
+	discountType: offer.discountType,
+	discountValue: offer.discountValue,
+	discountStartDate: offer.discountStartDate,
+	discountEndDate: offer.discountEndDate,
+	finalPrice: offer.finalPrice ?? null,
+	status: offer.status
+});
+
+const calculateOfferFinalPrice = (basePrice: number, discountType: string, discountValue: number | null) => {
+	if (discountType === 'FLAT_DISCOUNT') {
+		return Math.max(0, basePrice - (discountValue ?? 0));
+	}
+
+	if (discountType === 'PERCENTAGE_DISCOUNT') {
+		return Math.max(0, basePrice - basePrice * ((discountValue ?? 0) / 100));
+	}
+
+	return basePrice;
+};
+
+const attachOfferDetails = (products: any[]) => {
+	const now = new Date();
+
+	return products.map((product) => {
+		const offerRelations = Array.isArray(product.offerProducts) ? product.offerProducts : [];
+		const activeOffer = offerRelations
+			.map((item: any) => item.offer)
+			.find((offer: any) => offer && offer.status === 'ACTIVE' && isDateWithinRange(now, offer.discountStartDate, offer.discountEndDate));
+
+		const resolvedOffer = activeOffer
+			? getResolvedOfferPayload({
+				...activeOffer,
+				finalPrice: calculateOfferFinalPrice(product.Baseprice, activeOffer.discountType, activeOffer.discountValue)
+			})
+			: offerRelations.length > 0
+				? getInactiveOfferPayload()
+				: null;
+		const { offerProducts, ...rest } = product;
+
+		if (!resolvedOffer) {
+			return rest;
+		}
+
+		return {
+			...rest,
+			discountType: resolvedOffer.discountType,
+			discountValue: resolvedOffer.discountValue,
+			discountStartDate: resolvedOffer.discountStartDate,
+			discountEndDate: resolvedOffer.discountEndDate,
+			finalPrice: resolvedOffer.finalPrice,
+			offer: resolvedOffer
+		};
+	});
+};
+
 const generateUniqueSlugTx = async (tx: Prisma.TransactionClient, name: string) => {
 	const base = toSlug(name);
 	let slug = base;
@@ -316,20 +415,22 @@ const getProducts = async ({
 				additionalInformations: true,
 				seos: true,
 				productVariations: { where: { deletedAt: null }, include: { attribute: true } },
-				productReviews: { include: { user: true } }
+				productReviews: { include: { user: true } },
+				offerProducts: { include: { offer: true } }
 			}
 		}),
 		prisma.product.count({ where })
 	]);
 
+	const enrichedData = attachOfferDetails(data as any[]);
+
 	const meta = {
 		page,
-		limit,
 		total,
 		totalPages: Math.max(1, Math.ceil(total / limit))
 	};
 
-	return { data, meta };
+	return { data: enrichedData, meta };
 };
 
 const getProductsLimited = async ({ count = 10, searchTerm, category, brand, minPrice, maxPrice }: { count?: number; searchTerm?: string; category?: string | string[]; brand?: string | string[]; minPrice?: number; maxPrice?: number } = {}) => {
@@ -406,21 +507,6 @@ const getProductsLimited = async ({ count = 10, searchTerm, category, brand, min
 			productReviews: { include: { user: true } }
 		}
 	});
-};
-
-const getAllProducts = async () => {
- 	return prisma.product.findMany({
-		where: { deletedAt: null },
- 		orderBy: { createdAt: 'desc' },
- 		include: {
- 			brand: true,
- 			categories: { include: { category: true } },
- 			tags: { include: { tag: true } },
- 			additionalInformations: true,
- 			seos: true,
-				productVariations: { where: { deletedAt: null }, include: { attribute: true } }
- 		}
- 	});
 };
 
 const getProductById = async (id: string) => {
@@ -557,6 +643,54 @@ const getNewArrivals = async (count: number = 10) => {
 			productReviews: { include: { user: true } }
 		}
 	});
+};
+
+const getAllProducts = async () => {
+	const data = await prisma.product.findMany({
+		where: { deletedAt: null },
+		orderBy: { createdAt: 'desc' },
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { where: { deletedAt: null }, include: { attribute: true } },
+			productReviews: { include: { user: true } },
+			offerProducts: { include: { offer: true } }
+		}
+	});
+
+	return attachOfferDetails(data as any[]);
+};
+
+const getOfferProducts = async () => {
+	const products = await prisma.product.findMany({
+		where: {
+			deletedAt: null,
+			offerProducts: {
+				some: {
+					deletedAt: null,
+					offer: {
+						deletedAt: null
+					}
+				}
+			}
+		},
+		orderBy: { createdAt: 'desc' },
+		include: {
+			brand: true,
+			categories: { include: { category: true } },
+			tags: { include: { tag: true } },
+			additionalInformations: true,
+			seos: true,
+			productVariations: { where: { deletedAt: null }, include: { attribute: true } },
+			productReviews: { include: { user: true } },
+			...offerProductInclude
+		}
+	});
+
+	return attachOfferDetails(products as any[]);
 };
 
 const deleteProduct = async (id: string) => {
@@ -859,6 +993,7 @@ export const productService = {
 	getProductBySlug,
 	getHotDeals,
 	getNewArrivals,
+	getOfferProducts,
 	deleteProduct,
 	updateProduct,
 	patchProduct,

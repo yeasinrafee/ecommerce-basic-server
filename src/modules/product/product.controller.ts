@@ -389,6 +389,11 @@ const getNewArrivals = async (req: Request, res: Response) => {
 	sendResponse({ res, statusCode: 200, success: true, message: 'New arrivals retrieved', data: products });
 };
 
+const getOfferProducts = async (req: Request, res: Response) => {
+	const data = await productService.getOfferProducts();
+	sendResponse({ res, statusCode: 200, success: true, message: 'Products retrieved', data });
+};
+
 const deleteProduct = async (req: Request, res: Response) => {
 	const id = String(req.params.id);
 	await productService.deleteProduct(id);
@@ -713,6 +718,7 @@ export const productController = {
  	getAllProducts,
  	getHotDeals,
  	getNewArrivals,
+	getOfferProducts,
  	getProductById,
 	getProductBySlug,
  	deleteProduct,
