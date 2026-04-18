@@ -22,6 +22,7 @@ import { reviewRoutes } from '../modules/review/review.route.js';
 import { orderRoutes } from '../modules/order/order.route.js';
 import { customerRoutes } from '../modules/customer/customer.route.js';
 import { notificationRoutes } from '../modules/notification/notification.route.js';
+import { offerRoutes } from '../modules/offer/offer.route.js';
 const router = Router();
 
 router.use('/products', productRoutes);
@@ -40,6 +41,7 @@ router.use('/zone-policies', zonePolicyRoutes);
 router.use('/admins', adminRoutes);
 router.use('/web', webRoutes);
 router.use('/promos', promoRoutes);
+router.use('/offers', offerRoutes);
 router.use('/wishlists', wishlistRoutes);
 router.use('/carts', cartRoutes);
 router.use('/reviews', reviewRoutes);
